@@ -2,7 +2,7 @@ FROM dpage/pgadmin4:8.2
 
 # These defaults are overridden in the docker-compose.yaml 
 ENV POSTGRES_USER=postgres \
-    POSTGRES_DB=wfloat-local \
+    POSTGRES_DB=donate-concept-local \
     POSTGRES_PORT=5432 \
     POSTGRES_SERVICE_NAME=postgres
 
