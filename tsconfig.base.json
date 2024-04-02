@@ -1,0 +1,16 @@
+{
+  "exclude": ["node_modules", "dist"],
+  "compilerOptions": {
+    "incremental": false,
+    "removeComments": true,
+
+    "strict": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": false,
+
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "skipLibCheck": true
+  }
+}
