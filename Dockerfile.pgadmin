@@ -1,0 +1,30 @@
+FROM dpage/pgadmin4:8.2
+
+# These defaults are overridden in the docker-compose.yaml 
+ENV POSTGRES_USER=postgres \
+    POSTGRES_DB=wfloat-local \
+    POSTGRES_PORT=5432 \
+    POSTGRES_SERVICE_NAME=postgres
+
+# Switch to root user to gain write access
+USER root
+
+# Create the servers.json file
+RUN echo "{\
+    \"Servers\": {\
+    \"1\": {\
+    \"Name\": \"$POSTGRES_DB\",\
+    \"Group\": \"Servers\",\
+    \"Port\": $POSTGRES_PORT,\
+    \"Username\": \"$POSTGRES_USER\",\
+    \"Host\": \"$POSTGRES_SERVICE_NAME\",\
+    \"SSLMode\": \"prefer\",\
+    \"MaintenanceDB\": \"postgres\"\
+    }\
+    }\
+    }" > /pgadmin4/servers.json
+
+# Switch back to default user
+USER pgadmin
+
+ENTRYPOINT ["/entrypoint.sh"]
