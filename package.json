@@ -6,10 +6,10 @@
   "scripts": {
     "generate": "npx prisma generate --no-engine",
     "generate:watch": "npx prisma generate --no-engine --watch",
-    "dev:build": "npm run clean && tsc -b ./client ./server",
+    "dev:build": "npm run clean && npm run generate && tsc -b ./client ./server",
     "dev:watch": "tsc -b ./client ./server --preserveWatchOutput -w",
     "dev:start": "nodemon ./dist/server/index.js",
-    "dev": "npm run dev:build && concurrently -k 'npm:dev:start' 'npm:dev:watch'",
+    "dev": "npm run dev:build && concurrently -k 'npm:generate:watch' 'npm:dev:start' 'npm:dev:watch'",
     "clean": "rm -rf ./dist",
     "build": "npm run dev:build",
     "postinstall": "npm run build",
@@ -23,7 +23,8 @@
     "@prisma/client": "^5.6.0",
     "kysely": "^0.26.3",
     "pg": "^8.11.3",
-    "prisma-kysely": "^1.7.1"
+    "prisma-kysely": "^1.7.1",
+    "zod-prisma-types": "^3.1.6"
   },
   "devDependencies": {
     "@fastify/formbody": "^7.4.0",
@@ -37,9 +38,9 @@
     "fastify-plugin": "^4.5.1",
     "htmx.org": "^1.9.9",
     "nodemon": "^3.1.0",
+    "pino-pretty": "^10.3.0",
     "preact": "^10.19.3",
     "preact-render-to-string": "^6.3.1",
-    "pino-pretty": "^10.3.0",
     "prisma": "^5.6.0",
     "typescript": "^5.3.2"
   }
