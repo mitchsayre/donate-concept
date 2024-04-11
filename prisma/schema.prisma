@@ -12,3 +12,77 @@ generator kysely {
   output   = "./generated"
   fileName = "kysely.d.ts"
 }
+
+generator zod {
+  provider = "zod-prisma-types"
+}
+
+model User {
+  id    String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email String @unique
+  role  Role
+  Admin Admin? @relation("UserAdmin")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+}
+
+model Admin {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name     String
+  email    String @unique // how will this work with sso?
+  clientId String @db.Uuid
+  userId   String @unique @db.Uuid
+  Client   Client @relation(fields: [clientId], references: [id], name: "ClientAdmins")
+  User     User   @relation(fields: [userId], references: [id], name: "UserAdmin")
+}
+
+// Should this be called Organization
+model Client {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contactEmail         String
+  contactPhone         String
+  name                 String
+  description          String
+  colorPrimary         String
+  colorSecondary       String
+  urlPathname          String    @unique // enforce no slash??
+  logoUrl              String
+  logoUrlSigned        String
+  bannerPhotoUrl       String
+  bannerPhotoUrlSigned String
+  admins               Admin[]   @relation("ClientAdmins")
+  listings             Listing[] @relation("ClientListings")
+}
+
+model Listing {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  description    String
+  imageUrl       String
+  imageUrlSigned String
+  price          String
+  contactEmails  String[]
+  status         ListingStatus @default(DRAFT)
+  clientId       String        @db.Uuid
+  Client         Client        @relation(fields: [clientId], references: [id], name: "ClientListings")
+}
+
+enum ListingStatus {
+  DRAFT
+  PUBLIC
+  FUNDED
+  ARCHIVED
+}
+
+// !!Admin
+
+// !!Client
+
+// !!DonorPage (better name)
+
+// !!Listing (or Cause)
+
+// ??Subscription
