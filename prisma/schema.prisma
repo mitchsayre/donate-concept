@@ -43,8 +43,8 @@ model User {
 }
 
 enum Role {
-  OWNER
-  ADMIN
+  Owner
+  Admin
 }
 
 model Admin {
@@ -82,7 +82,7 @@ model Listing {
   imageUrl       String?
   imageUrlSigned String?
   price          String?
-  contactEmails  String[]
+  contactEmails  String[] /// @zod.string.email({ message: 'Invalid email address' })
   status         ListingStatus @default(Draft)
   clientId       String        @db.Uuid
   Client         Client        @relation(fields: [clientId], references: [id], name: "ClientListings")
