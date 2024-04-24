@@ -16,7 +16,8 @@ export const Layout = ({ title, children }: LayoutProps) => (
       <link rel="stylesheet" href={cssFile} />
     </head>
     <body class="container" hx-boost="true">
-      <h1>Welcome to yet another starter kit!</h1>
+      <h1 class="text-3xl font-bold underline">Hello world!</h1>
+      {/* <h1>Welcome to yet another starter kit!</h1> */}
       <main class="row">{children}</main>
     </body>
   </html>

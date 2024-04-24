@@ -8,13 +8,14 @@ export const IndexPage = ({ title }: PageProps) => (
     <div>
       <a href="/listing/new">Add Contact</a>
     </div>
+    <h1 class="text-3xl font-bold underline">Hello world!</h1>
 
     <p>
       <strong>Browser time: </strong>
       <span id="currentTime">…</span>
     </p>
     <p hx-ext="current-time" data-target="#currentTime">
-      <Login />
+      <ServerTime />
     </p>
     <form action="/" hx-get="/api/server-time" hx-target="previous p" hx-trigger="submit,every 30s">
       <button class="button primary" type="submit">
