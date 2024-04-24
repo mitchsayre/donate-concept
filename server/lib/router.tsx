@@ -1,8 +1,10 @@
-import { FastifyInstance } from 'fastify';
-import { IndexPage } from '../views/IndexPage';
-import { NotFoundPage } from '../views/NotFoundPage';
-import { ErrorPage } from '../views/ErrorPage';
-import { ServerTime } from '../views/components/ServerTime';
+import { FastifyInstance } from "fastify";
+import { IndexPage } from "../views/IndexPage";
+import { NotFoundPage } from "../views/NotFoundPage";
+import { ErrorPage } from "../views/ErrorPage";
+import { ServerTime } from "../views/components/ServerTime";
+import { ListingEdit } from "../views/components/ListingEdit";
+import { Login } from "../views/components/Login";
 
 /**
  * Encapsulates the routes
@@ -10,13 +12,23 @@ import { ServerTime } from '../views/components/ServerTime';
  * @param {Object} options plugin options, refer to https://www.fastify.dev/docs/latest/Reference/Plugins/#plugin-options
  */
 const router = async (app: FastifyInstance) => {
-  app.get('/', async () => {
+  app.get("/", async () => {
     return <IndexPage title="The home page" />;
   });
 
   // Renders the server time partial upon HTMX request
-  app.get('/api/server-time', async () => {
+  app.get("/api/server-time", async () => {
     return <ServerTime />;
+  });
+
+  // Renders the server time partial upon HTMX request
+  app.get("/listing/new", async () => {
+    return <ListingEdit />;
+  });
+
+  // Renders the server time partial upon HTMX request
+  app.get("/login", async () => {
+    return <Login />;
   });
 
   app.setNotFoundHandler(() => {
@@ -26,7 +38,7 @@ const router = async (app: FastifyInstance) => {
   app.setErrorHandler((err, req) => {
     app.log.error(err);
     // Fastify will lowercase the header name
-    if (req.headers['hx-request']) {
+    if (req.headers["hx-request"]) {
       // If the request is a HTMX request, we send the error message as
       // a normal partial response.
       return <ServerTime error="An unexpected error occurred" />;

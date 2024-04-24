@@ -1,4 +1,6 @@
-import bootstrap from './lib/bootstrap';
+import bootstrap from "./lib/bootstrap";
+
+// import { ClientSchema } from "../prisma/generated/zod/modelSchema/ClientSchema.js";
 
 const app = bootstrap();
 

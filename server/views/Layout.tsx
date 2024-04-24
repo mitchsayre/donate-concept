@@ -1,6 +1,6 @@
-import { JSX } from 'preact';
-import { cssFile } from '../lib/assets';
-import { PageProps } from '../types';
+import { JSX } from "preact";
+import { cssFile } from "../lib/assets";
+import { PageProps } from "../types";
 
 interface LayoutProps extends PageProps {
   children: string | JSX.Element[] | JSX.Element;
@@ -15,13 +15,9 @@ export const Layout = ({ title, children }: LayoutProps) => (
       <meta name="description" content="Yet another starter kit" />
       <link rel="stylesheet" href={cssFile} />
     </head>
-    <body class="container">
-      <main class="row">
-        <div class="col">
-          <h1>Welcome to yet another starter kit!</h1>
-          {children}
-        </div>
-      </main>
+    <body class="container" hx-boost="true">
+      <h1>Welcome to yet another starter kit!</h1>
+      <main class="row">{children}</main>
     </body>
   </html>
 );
