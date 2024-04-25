@@ -10,13 +10,13 @@ export const Layout = ({ title, children }: LayoutProps) => (
   <html lang="en">
     <head>
       <meta charset="utf-8" />
-      <title>Yet another starter kit - {title}</title>
+      <title>{title} - Donate Concept</title>
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <meta name="description" content="Yet another starter kit" />
       <link rel="stylesheet" href={cssFile} />
     </head>
     <body class="container" hx-boost="true">
-      <h1 class="text-3xl font-bold underline">Hello world!</h1>
+      {/* <h1 class="text-3xl font-bold underline">Hello world!</h1> */}
       {/* <h1>Welcome to yet another starter kit!</h1> */}
       <main class="row">{children}</main>
     </body>

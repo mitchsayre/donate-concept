@@ -1,21 +1,22 @@
-import Fastify from 'fastify';
-import helmet from '@fastify/helmet';
-import staticServe from '@fastify/static';
-import fastifyFormbody from '@fastify/formbody';
-import fastifyFavicon from 'fastify-favicon';
-import path from 'path';
-import router from './router';
-import { ASSETS_MOUNT_POINT, ASSETS_PATH } from './constants.js';
-import { PinoLoggerOptions } from 'fastify/types/logger';
-import { NodeEnv } from '../types';
-import jsxRenderer from './jsxRenderer';
+import Fastify from "fastify";
+import helmet from "@fastify/helmet";
+import staticServe from "@fastify/static";
+import fastifyFormbody from "@fastify/formbody";
+import fastifyFavicon from "fastify-favicon";
+import path from "path";
+import router from "./router";
+import { ASSETS_MOUNT_POINT, ASSETS_PATH } from "./constants.js";
+import { PinoLoggerOptions } from "fastify/types/logger";
+import { NodeEnv } from "../types";
+import jsxRenderer from "./jsxRenderer";
+import { LoginRouter } from "../src/login/login.router";
 
 const envToLogger: Record<NodeEnv, PinoLoggerOptions | boolean> = {
   development: {
     transport: {
-      target: 'pino-pretty',
+      target: "pino-pretty",
       options: {
-        ignore: 'pid,res,req.remoteAddress,req.remotePort,req.hostname',
+        ignore: "pid,res,req.remoteAddress,req.remotePort,req.hostname",
       },
     },
   },
@@ -23,14 +24,13 @@ const envToLogger: Record<NodeEnv, PinoLoggerOptions | boolean> = {
 };
 
 const app = Fastify({
-  logger:
-    envToLogger[(process.env.NODE_ENV as NodeEnv) || 'development'] ?? true,
+  logger: envToLogger[(process.env.NODE_ENV as NodeEnv) || "development"] ?? true,
 });
 
 app
   .register(fastifyFavicon, {
-    path: './assets',
-    name: 'favicon.ico',
+    path: "./assets",
+    name: "favicon.ico",
     maxAge: 3600,
   })
   .register(fastifyFormbody)
@@ -39,7 +39,7 @@ app
     contentSecurityPolicy: {
       // If you get stuck in CSP, try this: crossOriginEmbedderPolicy: false,
       directives: {
-        'script-src': ["'self'", "'unsafe-inline'"],
+        "script-src": ["'self'", "'unsafe-inline'"],
       },
     },
   })
@@ -49,6 +49,7 @@ app
     prefix: `/${ASSETS_MOUNT_POINT}`,
   })
 
-  .register(router);
+  .register(router)
+  .register(LoginRouter);
 
 export default () => app;

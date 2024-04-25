@@ -4,7 +4,9 @@ import { NotFoundPage } from "../views/NotFoundPage";
 import { ErrorPage } from "../views/ErrorPage";
 import { ServerTime } from "../views/components/ServerTime";
 import { ListingEdit } from "../views/components/ListingEdit";
-import { Login } from "../views/components/Login";
+// import { FastifyInstance } from "fastify";
+import { Login } from "../src/login/login.view";
+import { LoginRequest, LoginSchema } from "../src/login/login.service";
 
 /**
  * Encapsulates the routes
@@ -13,22 +15,17 @@ import { Login } from "../views/components/Login";
  */
 const router = async (app: FastifyInstance) => {
   app.get("/", async () => {
-    return <IndexPage title="The home page" />;
+    return <IndexPage title="Home" />;
   });
 
-  // Renders the server time partial upon HTMX request
-  app.get("/api/server-time", async () => {
-    return <ServerTime />;
-  });
+  // // Renders the server time partial upon HTMX request
+  // app.get("/api/server-time", async () => {
+  //   return <ServerTime />;
+  // });
 
   // Renders the server time partial upon HTMX request
   app.get("/listing/new", async () => {
     return <ListingEdit />;
-  });
-
-  // Renders the server time partial upon HTMX request
-  app.get("/login", async () => {
-    return <Login />;
   });
 
   app.setNotFoundHandler(() => {
