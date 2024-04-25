@@ -24,8 +24,7 @@ export const IndexPage = ({ title }: PageProps) => (
         Update server time
       </button>
     </form> */}
-    <script src="/a/vendor/htmx.min.js"></script>
-    <script type="module" src={jsFile}></script>
-    {/* <script>console.log('This code runs on the client side')</script> */}
+    {/* <script src="/a/vendor/htmx.min.js"></script> */}
+    {/* <script type="module" src={jsFile}></script> */}
   </Layout>
 );

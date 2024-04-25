@@ -1,5 +1,5 @@
 import { nowToISOString, updateElementContent } from "./lib/tools.js";
-import { ClientSchema } from "../prisma/generated/zod/modelSchema/ClientSchema.js";
+// import { ClientSchema } from "../prisma/generated/zod/modelSchema/ClientSchema.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const htmx = (window as any).htmx;
@@ -19,11 +19,11 @@ if (htmx !== undefined) {
 
 console.log("This code runs on the client side");
 
-const form = document.getElementById("clientForm");
-if (form) {
-  console.log(form);
-  form.addEventListener("submit", function (event) {
-    event.preventDefault();
-    console.log(event);
-  });
-}
+// const form = document.getElementById("clientForm");
+// if (form) {
+//   console.log(form);
+//   form.addEventListener("submit", function (event) {
+//     event.preventDefault();
+//     console.log(event);
+//   });
+// }

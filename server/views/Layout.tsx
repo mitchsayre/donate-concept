@@ -1,5 +1,5 @@
 import { JSX } from "preact";
-import { cssFile } from "../lib/assets";
+import { cssFile, jsFile } from "../lib/assets";
 import { PageProps } from "../types";
 
 interface LayoutProps extends PageProps {
@@ -20,5 +20,7 @@ export const Layout = ({ title, children }: LayoutProps) => (
       {/* <h1>Welcome to yet another starter kit!</h1> */}
       <main class="row">{children}</main>
     </body>
+    <script src="/a/vendor/htmx.min.js"></script>
+    <script type="module" src={jsFile}></script>
   </html>
 );
