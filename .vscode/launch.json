@@ -4,10 +4,13 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "index.ts",
-      "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/dist/index.js",
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+      "name": "Debug npm run dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "restart": true,
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "timeout": 10000
     }
   ]
 }

@@ -1,3 +1,4 @@
+import { error } from "console";
 import { nowToISOString, updateElementContent } from "./lib/tools.js";
 // import { ClientSchema } from "../prisma/generated/zod/modelSchema/ClientSchema.js";
 
@@ -17,13 +18,15 @@ if (htmx !== undefined) {
   });
 }
 
-console.log("This code runs on the client side");
-
-// const form = document.getElementById("clientForm");
-// if (form) {
-//   console.log(form);
-//   form.addEventListener("submit", function (event) {
-//     event.preventDefault();
-//     console.log(event);
-//   });
-// }
+addEventListener("htmx:load", (_e) => {
+  document.querySelectorAll("[data-input]").forEach((el) => {
+    el.addEventListener("focus", () => {
+      el.classList.remove("input-error");
+      const sibling = el.nextElementSibling;
+      if (sibling) {
+        const errorMessage = sibling.querySelector("[data-input-error-message]");
+        errorMessage?.remove();
+      }
+    });
+  });
+});

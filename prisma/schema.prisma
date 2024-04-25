@@ -36,10 +36,11 @@ generator zod {
 }
 
 model User {
-  id    String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email String @unique
-  role  Role
-  Admin Admin? @relation("UserAdmin")
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email      String @unique
+  cognitoSub String @unique @db.Uuid
+  role       Role
+  Admin      Admin? @relation("UserAdmin")
 }
 
 enum Role {

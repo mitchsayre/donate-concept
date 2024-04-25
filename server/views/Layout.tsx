@@ -14,13 +14,13 @@ export const Layout = ({ title, children }: LayoutProps) => (
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <meta name="description" content="Yet another starter kit" />
       <link rel="stylesheet" href={cssFile} />
+      <script src="/a/vendor/htmx.min.js"></script>
     </head>
     <body class="container" hx-boost="true">
       {/* <h1 class="text-3xl font-bold underline">Hello world!</h1> */}
       {/* <h1>Welcome to yet another starter kit!</h1> */}
       <main class="row">{children}</main>
     </body>
-    <script src="/a/vendor/htmx.min.js"></script>
     <script type="module" src={jsFile}></script>
   </html>
 );

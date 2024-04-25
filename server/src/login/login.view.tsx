@@ -19,13 +19,14 @@ export const Login = ({ body, errors }: LoginProps) => {
         </div>
 
         <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-          <form novalidate={true} class="space-y-6" action="/login" method="post" hx-boost="true">
+          <form novalidate={true} class="space-y-4" action="/login" method="post" hx-boost="true">
             <div>
               <label for="email" class="input-label">
                 Email address
               </label>
               <div class="mt-2">
                 <input
+                  data-input
                   value={body?.email}
                   id="email"
                   name="email"
@@ -49,6 +50,7 @@ export const Login = ({ body, errors }: LoginProps) => {
               </div>
               <div class="mt-2">
                 <input
+                  data-input
                   value={body?.password}
                   id="password"
                   name="password"
