@@ -16,6 +16,12 @@ import { User } from "../../prisma/generated/kysely";
 import { createLoaders } from "./loaders";
 import { fastifyAuth, FastifyAuthFunction } from "@fastify/auth";
 import { verifyAdmin, verifyOwner } from "../role";
+import { cognitoDecodeAccessToken, cognitoRefreshAccessToken } from "../auth";
+import { JwtExpiredError } from "aws-jwt-verify/error";
+import { decrypt } from "../secrets";
+
+const SESSION_ENCRYPTION_KEY = process.env.SESSION_ENCRYPTION_KEY!;
+const DB_ENCRYPTION_KEY = process.env.DB_ENCRYPTION_KEY!;
 
 declare module "fastify" {
   interface Session {
@@ -70,15 +76,33 @@ app
   .register(fastifyCookie)
   .register(fastifySession, { secret: "a secret with minimum length of 32 characters" })
   .addHook("preHandler", async (request, reply) => {
-    // TODO: infer userId from session token
-    const currentUserId = "";
-
     request.session.loaders = createLoaders();
-    const me = await request.session.loaders.user.load(currentUserId);
+
+    let accessToken = "";
+    let me: User | null = null;
+    const decodedAccessTokenResult = await cognitoDecodeAccessToken(accessToken);
+    if (decodedAccessTokenResult instanceof JwtExpiredError) {
+      if (decodedAccessTokenResult.rawJwt?.payload.sub) {
+        me = await request.session.loaders.userFromCognitoSub.load(
+          decodedAccessTokenResult.rawJwt.payload.sub
+        );
+        if (me) {
+          if (!me.refreshTokenEncrypted) {
+            throw new Error(
+              "TODO: handle if the current user does not have a refresh token in the database."
+            );
+          }
+          const refreshToken = decrypt(me.refreshTokenEncrypted, DB_ENCRYPTION_KEY);
+          accessToken = await cognitoRefreshAccessToken(refreshToken);
+        }
+      }
+    } else {
+      me = await request.session.loaders.userFromCognitoSub.load(decodedAccessTokenResult.sub);
+    }
+
     if (me) {
       request.session.me = me;
     }
-    // next();
   })
 
   .decorate("verifyAdmin", verifyAdmin)
