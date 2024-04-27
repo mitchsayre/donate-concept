@@ -4,17 +4,9 @@ import { NotFoundPage } from "../views/NotFoundPage";
 import { ErrorPage } from "../views/ErrorPage";
 import { ServerTime } from "../views/components/ServerTime";
 import { ListingEdit } from "../views/components/ListingEdit";
-// import { FastifyInstance } from "fastify";
-import { Login } from "../src/login/login.view";
-import { LoginRequest, LoginSchema } from "../src/login/login.service";
 
-/**
- * Encapsulates the routes
- * @param {FastifyInstance} fastify  Encapsulated Fastify Instance
- * @param {Object} options plugin options, refer to https://www.fastify.dev/docs/latest/Reference/Plugins/#plugin-options
- */
 const router = async (app: FastifyInstance) => {
-  app.get("/", async () => {
+  app.get("/", { preHandler: app.auth([app.verifyOwner]) }, async () => {
     return <IndexPage title="Home" />;
   });
 

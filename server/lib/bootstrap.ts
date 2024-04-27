@@ -14,11 +14,18 @@ import { fastifySession } from "@fastify/session";
 import { fastifyCookie } from "@fastify/cookie";
 import { User } from "../../prisma/generated/kysely";
 import { createLoaders } from "./loaders";
+import { fastifyAuth, FastifyAuthFunction } from "@fastify/auth";
+import { verifyAdmin, verifyOwner } from "../role";
 
 declare module "fastify" {
   interface Session {
     me: User;
     loaders: ReturnType<typeof createLoaders>;
+  }
+
+  interface FastifyInstance {
+    verifyAdmin: FastifyAuthFunction;
+    verifyOwner: FastifyAuthFunction;
   }
 }
 
@@ -73,6 +80,10 @@ app
     }
     // next();
   })
+
+  .decorate("verifyAdmin", verifyAdmin)
+  .decorate("verifyOwner", verifyOwner)
+  .register(fastifyAuth)
 
   .register(router)
   .register(LoginRouter);
