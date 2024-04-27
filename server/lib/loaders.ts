@@ -13,9 +13,9 @@ function createLoader<T extends keyof DB & string>(tableName: T, columnName: key
             .where(columnName as any, "in", keys)
             .execute();
 
-          resolve(keys.map((key) => rows.find((row: any) => row.id === key) || null));
+          resolve(keys.map((key) => rows.find((row: any) => row[columnName] === key) || null));
         } catch (error) {
-          console.error(`Error loading ${tableName}:`, error);
+          console.error(`Error loading for ${tableName}:`, error);
           resolve(keys.map(() => null)); // Resolve with nulls in case of error
         }
       })
@@ -25,5 +25,8 @@ function createLoader<T extends keyof DB & string>(tableName: T, columnName: key
 export function createLoaders() {
   return {
     user: createLoader("User", "id"),
+
+    // 1 to 1 relation loaders
+    userFromCognitoSub: createLoader("User", "cognitoSub"),
   };
 }
