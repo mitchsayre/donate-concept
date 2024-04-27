@@ -22,8 +22,11 @@
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.556.0",
+    "@fastify/cookie": "^9.3.1",
+    "@fastify/session": "^10.7.2",
     "@prisma/client": "^5.6.0",
     "aws-jwt-verify": "^4.0.1",
+    "dataloader": "^2.2.2",
     "dotenv": "^16.4.5",
     "kysely": "^0.26.3",
     "pg": "^8.11.3",
