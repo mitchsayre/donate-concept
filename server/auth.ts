@@ -10,6 +10,7 @@ import {
 } from "@aws-sdk/client-cognito-identity-provider";
 import { CognitoJwtVerifier } from "aws-jwt-verify";
 import { JwtExpiredError } from "aws-jwt-verify/error";
+import { google } from "googleapis";
 import { encrypt } from "./secrets";
 
 const AWS_REGION = process.env.AWS_REGION!;
@@ -28,6 +29,7 @@ const SESSION_ENCRYPTION_KEY = process.env.SESSION_ENCRYPTION_KEY!;
 
 const GOOGLE_URL_STATE_PASSTHROUGH_KEY = process.env.GOOGLE_URL_STATE_PASSTHROUGH_KEY!;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
 
 const client = new CognitoIdentityProvider({
   region: AWS_REGION,
@@ -43,6 +45,21 @@ const verifier = CognitoJwtVerifier.create({
   clientId: COGNITO_CLIENT_ID,
   includeRawJwtInErrors: true,
 });
+
+let redirectUrlDomain;
+if (STAGE === "production") {
+  redirectUrlDomain = `https://${URL_PROD}`;
+} else if (STAGE === "development") {
+  redirectUrlDomain = `https://${URL_DEV}`;
+} else {
+  redirectUrlDomain = `http://localhost:${PORT}`;
+}
+let redirectUrl = `${redirectUrlDomain}/${OAUTH_RESPONSE_ROUTE}`;
+const googleOAuth2Client = new google.auth.OAuth2(
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
+  redirectUrlDomain
+);
 
 export async function cognitoResetPassword(userSub: string, sessionToken: string) {
   const input = {
@@ -135,6 +152,9 @@ export async function cognitoDecodeAccessToken(accessToken: string) {
 }
 
 export function googleBuildAuthUrl() {
+  // TODO: consider using googleOAuth2Client.generateAuthUrl
+  // TODO: Use login_hint query param to pre-fill email address for sign up
+  // TODO: Fix state to prevent xsrf attacks: https://developers.google.com/identity/openid-connect/openid-connect#createxsrftoken
   const stateForCsrfProtection = {
     key: GOOGLE_URL_STATE_PASSTHROUGH_KEY,
     unixTime: Date.now(),
@@ -143,23 +163,44 @@ export function googleBuildAuthUrl() {
   let statePassthroughParamEncrypted = encrypt(statePassthroughParam, SESSION_ENCRYPTION_KEY);
   statePassthroughParamEncrypted = encodeURIComponent(statePassthroughParamEncrypted);
 
-  let redirectUrlDomain;
-  if (STAGE === "production") {
-    redirectUrlDomain = `https://${URL_PROD}`;
-  } else if (STAGE === "development") {
-    redirectUrlDomain = `https://${URL_DEV}`;
-  } else {
-    redirectUrlDomain = `http://localhost:${PORT}`;
-  }
-  let redirectUrl = `${redirectUrlDomain}/${OAUTH_RESPONSE_ROUTE}`;
-  redirectUrl = encodeURIComponent(redirectUrl);
+  // let redirectUrlDomain;
+  // if (STAGE === "production") {
+  //   redirectUrlDomain = `https://${URL_PROD}`;
+  // } else if (STAGE === "development") {
+  //   redirectUrlDomain = `https://${URL_DEV}`;
+  // } else {
+  //   redirectUrlDomain = `http://localhost:${PORT}`;
+  // }
+  // let redirectUrl = `${redirectUrlDomain}/${OAUTH_RESPONSE_ROUTE}`;
+  let redirectUrlEncoded = encodeURIComponent(redirectUrl);
+
+  const scope = encodeURIComponent("https://www.googleapis.com/auth/userinfo.email");
 
   return `https://accounts.google.com/o/oauth2/v2/auth?
-scope=https%3A//www.googleapis.com/auth/drive.metadata.readonly&
-access_type=offline&
+scope=${scope}&
+access_type=online&
 include_granted_scopes=true&
 response_type=code&
 state=${statePassthroughParamEncrypted}&
-redirect_uri=${redirectUrl}&
+redirect_uri=${redirectUrlEncoded}&
 client_id=${GOOGLE_CLIENT_ID}`;
+}
+
+export async function googleFetchEmailFromResponseCode(code: string) {
+  const userScopedGoogleOAuth2Client = new google.auth.OAuth2(
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    redirectUrl
+  );
+
+  const { tokens } = await userScopedGoogleOAuth2Client.getToken(code);
+  userScopedGoogleOAuth2Client.setCredentials(tokens);
+
+  const userScopedGoogleOAuth2 = google.oauth2({
+    auth: userScopedGoogleOAuth2Client,
+    version: "v2",
+  });
+  const userInfo = await userScopedGoogleOAuth2.userinfo.get();
+
+  return userInfo.data.email;
 }

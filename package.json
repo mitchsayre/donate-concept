@@ -29,6 +29,7 @@
     "aws-jwt-verify": "^4.0.1",
     "dataloader": "^2.2.2",
     "dotenv": "^16.4.5",
+    "googleapis": "^135.0.0",
     "kysely": "^0.26.3",
     "pg": "^8.11.3",
     "prisma-kysely": "^1.7.1",
