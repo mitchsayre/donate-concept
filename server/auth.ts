@@ -2,6 +2,7 @@ import {
   AdminInitiateAuthCommand,
   AssociateSoftwareTokenCommand,
   AuthFlowType,
+  AuthenticationResultType,
   ChallengeName,
   ChallengeNameType,
   CognitoIdentityProvider,
@@ -11,6 +12,7 @@ import {
 import { CognitoJwtVerifier } from "aws-jwt-verify";
 import { JwtExpiredError } from "aws-jwt-verify/error";
 import { google } from "googleapis";
+import axios from "axios";
 import { encrypt } from "./secrets";
 
 const AWS_REGION = process.env.AWS_REGION!;
@@ -19,6 +21,7 @@ const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY!;
 
 const COGNITO_USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
 const COGNITO_CLIENT_ID = process.env.COGNITO_CLIENT_ID!;
+const COGNITO_CLIENT_SECRET = process.env.COGNITO_CLIENT_SECRET!;
 const COGNITO_HOSTED_URL = process.env.COGNITO_HOSTED_URL!;
 
 const PORT = process.env.PORT!;
@@ -47,7 +50,7 @@ const verifier = CognitoJwtVerifier.create({
   includeRawJwtInErrors: true,
 });
 
-let redirectUrlDomain;
+let redirectUrlDomain: string;
 if (STAGE === "production") {
   redirectUrlDomain = `https://${URL_PROD}`;
 } else if (STAGE === "development") {
@@ -167,7 +170,7 @@ export function cognitoBuildAuthUrl(identityProvider: string) {
 
   const scope = encodeURIComponent("openid email");
 
-  return `${COGNITO_HOSTED_URL}?
+  return `${COGNITO_HOSTED_URL}/oauth2/authorize?
 response_type=code&
 scope=${scope}&
 state=${statePassthroughParamEncrypted}&
@@ -178,92 +181,32 @@ redirect_uri=${redirectUrlEncoded}&
 client_id=${COGNITO_CLIENT_ID}&`;
 }
 
-type GoogleCredentials = {
-  email: string;
-  accessToken: string;
-};
-export async function googleFetchCredentialsFromOAuthResponse(
+export async function cognitoFetchCredentialsFromOAuthResponse(
   code: string
-): Promise<GoogleCredentials | undefined> {
-  const userScopedGoogleOAuth2Client = new google.auth.OAuth2(
-    GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET,
-    redirectUrl
-  );
-
-  const { tokens } = await userScopedGoogleOAuth2Client.getToken(code);
-  userScopedGoogleOAuth2Client.setCredentials(tokens);
-
-  const userScopedGoogleOAuth2 = google.oauth2({
-    auth: userScopedGoogleOAuth2Client,
-    version: "v2",
+): Promise<AuthenticationResultType> {
+  const url = `${COGNITO_HOSTED_URL}/oauth2/token`;
+  const data = new URLSearchParams({
+    grant_type: "authorization_code",
+    client_id: COGNITO_CLIENT_ID,
+    code: code,
+    redirect_uri: redirectUrl,
   });
-  const userInfo = await userScopedGoogleOAuth2.userinfo.get();
-  const email = userInfo.data.email;
-  const accessToken = tokens.access_token;
-  if (email && accessToken) {
-    return { email, accessToken };
-  }
-}
 
-export async function cognitoValidateOAuthCode(code: string) {
-  // const cognitoidentity = new CognitoIdentityClient({
-  //   credentials: fromCognitoIdentityPool({
-  //     client: new CognitoIdentityClient(),
-  //     identityPoolId: IDENTITY_POOL_ID,
-  //     logins: {
-  //       [USER_POOL_ID]: credentials.accessToken,
-  //     },
-  //   }),
-  // });
-  // var credentials = await cognitoidentity.config.credentials();
-  // console.log(credentials);
-  // const cognitoIdentity = new CognitoIdentity({
-  //   region: AWS_REGION,
-  //   credentials: {
-  //     accessKeyId: AWS_ACCESS_KEY_ID,
-  //     secretAccessKey: AWS_SECRET_ACCESS_KEY,
-  //   },
-  // });
-  // const input = new GetIdCommand{
-  //   IdentityPoolId: COGNITO_USER_POOL_ID,
-  //   Logins: {
-  //     "accounts.google.com": credentials.accessToken,
-  //   },
-  // };
-  // cognitoIdentity.getId(input, (err, data) => {
-  //   if (err) {
-  //     console.log("Error getting ID:", err);
-  //   } else if (!data.IdentityId) {
-  //     console.log("No identity ID found.");
-  //   } else {
-  //     const idParams = {
-  //       IdentityId: data.IdentityId,
-  //       Logins: {
-  //         "accounts.google.com": credentials.accessToken,
-  //       },
-  //     };
-  //     cognitoIdentity.getCredentialsForIdentity(idParams, (err, credentials) => {
-  //       if (err) {
-  //         console.log("Error getting credentials:", err);
-  //       } else {
-  //         console.log("Cognito credentials:", credentials);
-  //         // Use these credentials to access AWS services or manage sessions
-  //       }
-  //     });
-  //   }
-  // });
-  // if (authResult["status"]["signed_in"]) {
-  //   // Add the Google access token to the Amazon Cognito credentials login map.
-  //   AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-  //     IdentityPoolId: "IDENTITY_POOL_ID",
-  //     Logins: {
-  //       "accounts.google.com": authResult["id_token"],
-  //     },
-  //   });
-  //   // Obtain AWS credentials
-  //   AWS.config.credentials.get(function () {
-  //     // Access AWS resources here.
-  //   });
-  // }
+  const basicAuth = `Basic ${btoa(`${COGNITO_CLIENT_ID}:${COGNITO_CLIENT_SECRET}`)}`;
+  const config = {
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: basicAuth,
+    },
+  };
+
+  const response = await axios.post(url, data, config);
+
+  return {
+    AccessToken: response.data.access_token,
+    ExpiresIn: response.data.expires_in,
+    IdToken: response.data.id_token,
+    RefreshToken: response.data.refresh_token,
+    TokenType: response.data.token_type,
+  };
 }

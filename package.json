@@ -27,6 +27,7 @@
     "@fastify/session": "^10.7.2",
     "@prisma/client": "^5.6.0",
     "aws-jwt-verify": "^4.0.1",
+    "axios": "^1.6.8",
     "dataloader": "^2.2.2",
     "dotenv": "^16.4.5",
     "googleapis": "^135.0.0",
