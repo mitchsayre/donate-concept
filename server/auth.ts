@@ -35,6 +35,9 @@ const GOOGLE_URL_STATE_PASSTHROUGH_KEY = process.env.GOOGLE_URL_STATE_PASSTHROUG
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
 
+const MICROSOFT_CLIENT_ID = process.env.MICROSOFT_CLIENT_ID!;
+const MICROSOFT_CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET!;
+
 const client = new CognitoIdentityProvider({
   region: AWS_REGION,
   credentials: {
@@ -59,11 +62,6 @@ if (STAGE === "production") {
   redirectUrlDomain = `http://localhost:${PORT}`;
 }
 let redirectUrl = `${redirectUrlDomain}/${OAUTH_RESPONSE_ROUTE}`;
-const googleOAuth2Client = new google.auth.OAuth2(
-  GOOGLE_CLIENT_ID,
-  GOOGLE_CLIENT_SECRET,
-  redirectUrlDomain
-);
 
 export async function cognitoResetPassword(userSub: string, sessionToken: string) {
   const input = {
@@ -155,12 +153,19 @@ export async function cognitoDecodeAccessToken(accessToken: string) {
   }
 }
 
-export function cognitoBuildAuthUrl(identityProvider: string) {
+export type IdentityProvider = "Google" | "Microsoft";
+export type StatePassthroughType = {
+  key: string;
+  unixTime: number;
+  identityProvider: IdentityProvider;
+};
+export function cognitoBuildAuthUrl(identityProvider: IdentityProvider) {
   // TODO: Use login_hint query param to pre-fill email address for sign up: https://github.com/aws-amplify/amplify-js/issues/8951
   // TODO: Fix state to prevent xsrf attacks: https://developers.google.com/identity/openid-connect/openid-connect#createxsrftoken
-  const stateForCsrfProtection = {
+  const stateForCsrfProtection: StatePassthroughType = {
     key: GOOGLE_URL_STATE_PASSTHROUGH_KEY,
     unixTime: Date.now(),
+    identityProvider: identityProvider,
   };
   const statePassthroughParam = JSON.stringify(stateForCsrfProtection);
   let statePassthroughParamEncrypted = encrypt(statePassthroughParam, SESSION_ENCRYPTION_KEY);
@@ -170,15 +175,26 @@ export function cognitoBuildAuthUrl(identityProvider: string) {
 
   const scope = encodeURIComponent("openid email");
 
-  return `${COGNITO_HOSTED_URL}/oauth2/authorize?
+  let identityUrl: string;
+  let clientId: string;
+  if (identityProvider === "Google") {
+    identityUrl = "https://accounts.google.com/o/oauth2/v2/auth";
+    clientId = GOOGLE_CLIENT_ID;
+  } else if (identityProvider === "Microsoft") {
+    identityUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
+    clientId = MICROSOFT_CLIENT_ID;
+  } else {
+    throw Error(`Invalid identity provider: ${identityProvider}.`);
+  }
+
+  return `${identityUrl}?
 response_type=code&
 scope=${scope}&
 state=${statePassthroughParamEncrypted}&
-identity_provider=${identityProvider}&
 access_type=online&
 include_granted_scopes=true&
 redirect_uri=${redirectUrlEncoded}&
-client_id=${COGNITO_CLIENT_ID}&`;
+client_id=${clientId}&`;
 }
 
 export async function cognitoFetchCredentialsFromOAuthResponse(
@@ -209,4 +225,41 @@ export async function cognitoFetchCredentialsFromOAuthResponse(
     RefreshToken: response.data.refresh_token,
     TokenType: response.data.token_type,
   };
+}
+
+type AuthCredentials = {
+  email: string;
+  tokens: AuthenticationResultType;
+};
+export async function googleFetchCredentialsFromOAuthResponse(
+  code: string
+): Promise<AuthCredentials | undefined> {
+  const userScopedGoogleOAuth2Client = new google.auth.OAuth2(
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    redirectUrl
+  );
+
+  const { tokens } = await userScopedGoogleOAuth2Client.getToken(code);
+  userScopedGoogleOAuth2Client.setCredentials(tokens);
+
+  const userScopedGoogleOAuth2 = google.oauth2({
+    auth: userScopedGoogleOAuth2Client,
+    version: "v2",
+  });
+  const userInfo = await userScopedGoogleOAuth2.userinfo.get();
+  const email = userInfo.data.email;
+  const accessToken = tokens.access_token;
+  if (email && accessToken) {
+    return {
+      email,
+      tokens: {
+        AccessToken: accessToken,
+        ExpiresIn: tokens.expiry_date ?? undefined,
+        IdToken: tokens.id_token ?? undefined,
+        RefreshToken: tokens.refresh_token ?? undefined,
+        TokenType: tokens.token_type ?? undefined,
+      },
+    };
+  }
 }

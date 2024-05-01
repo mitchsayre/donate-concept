@@ -112,10 +112,7 @@ export const Login = ({ body, errors }: LoginProps) => {
                 </button>
               </a>
               <a disabled href={microsoftAuthUrl} class="flex flex-grow">
-                <button
-                  disabled
-                  class="cursor-not-allowed justify-center flex flex-grow bg-white text-gray-700 font-semibold py-2 px-4 border border-gray-300 rounded shadow"
-                >
+                <button class="justify-center flex flex-grow bg-white text-gray-700 font-semibold py-2 px-4 border border-gray-300 rounded shadow">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     height="24"
