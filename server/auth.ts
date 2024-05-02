@@ -1,8 +1,8 @@
 import {
   AdminInitiateAuthCommand,
   AssociateSoftwareTokenCommand,
+  AuthCredentialsAuthenticationResultType,
   AuthFlowType,
-  AuthenticationResultType,
   ChallengeName,
   ChallengeNameType,
   CognitoIdentityProvider,
@@ -14,6 +14,7 @@ import { JwtExpiredError } from "aws-jwt-verify/error";
 import { google } from "googleapis";
 import axios from "axios";
 import { encrypt } from "./secrets";
+// import { microsoftAssertionToken } from "./cert";
 
 const AWS_REGION = process.env.AWS_REGION!;
 const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID!;
@@ -173,7 +174,11 @@ export function cognitoBuildAuthUrl(identityProvider: IdentityProvider) {
 
   let redirectUrlEncoded = encodeURIComponent(redirectUrl);
 
-  const scope = encodeURIComponent("openid email");
+  const scopeArray = ["openid", "email"];
+  // if (identityProvider === "Microsoft") {
+  //   scopeArray.push("offline_access");
+  // }
+  const scope = encodeURIComponent(scopeArray.join(" "));
 
   let identityUrl: string;
   let clientId: string;
@@ -197,9 +202,9 @@ redirect_uri=${redirectUrlEncoded}&
 client_id=${clientId}&`;
 }
 
-export async function cognitoFetchCredentialsFromOAuthResponse(
+export async function cognitoFetchCredentialsFromOAuthCode(
   code: string
-): Promise<AuthenticationResultType> {
+): Promise<AuthCredentialsAuthenticationResultType> {
   const url = `${COGNITO_HOSTED_URL}/oauth2/token`;
   const data = new URLSearchParams({
     grant_type: "authorization_code",
@@ -229,9 +234,10 @@ export async function cognitoFetchCredentialsFromOAuthResponse(
 
 type AuthCredentials = {
   email: string;
-  tokens: AuthenticationResultType;
+  tokens: AuthCredentialsAuthenticationResultType;
 };
-export async function googleFetchCredentialsFromOAuthResponse(
+
+export async function googleFetchCredentialsFromOAuthCode(
   code: string
 ): Promise<AuthCredentials | undefined> {
   const userScopedGoogleOAuth2Client = new google.auth.OAuth2(
@@ -262,4 +268,35 @@ export async function googleFetchCredentialsFromOAuthResponse(
       },
     };
   }
+}
+
+export async function microsoftFetchCredentialsFromOAuthCode(
+  code: string
+): Promise<AuthCredentialsAuthenticationResultType> {
+  const url = `https://login.microsoftonline.com/common/oauth2/v2.0/token`;
+  const data = new URLSearchParams({
+    grant_type: "authorization_code",
+    client_id: MICROSOFT_CLIENT_ID,
+    client_secret: MICROSOFT_CLIENT_SECRET,
+    code: code,
+    redirect_uri: redirectUrl,
+    // client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+    // client_assertion: microsoftAssertionToken,
+  });
+
+  const config = {
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+  };
+
+  const response = await axios.post(url, data, config);
+
+  return {
+    AccessToken: response.data.access_token,
+    ExpiresIn: response.data.expires_in,
+    IdToken: response.data.id_token,
+    RefreshToken: response.data.refresh_token,
+    TokenType: response.data.token_type,
+  };
 }
