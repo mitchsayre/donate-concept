@@ -160,7 +160,7 @@ export type StatePassthroughType = {
   unixTime: number;
   identityProvider: IdentityProvider;
 };
-export function cognitoBuildAuthUrl(identityProvider: IdentityProvider) {
+export function cognitoBuildAuthUrl(identityProvider: IdentityProvider, loginHint?: string) {
   // TODO: Use login_hint query param to pre-fill email address for sign up: https://github.com/aws-amplify/amplify-js/issues/8951
   // TODO: Fix state to prevent xsrf attacks: https://developers.google.com/identity/openid-connect/openid-connect#createxsrftoken
   const stateForCsrfProtection: StatePassthroughType = {
@@ -176,7 +176,7 @@ export function cognitoBuildAuthUrl(identityProvider: IdentityProvider) {
 
   const scopeArray = ["openid", "email"];
   // if (identityProvider === "Microsoft") {
-  //   scopeArray.push("offline_access");
+  //   scopeArray.push("User.Read");
   // }
   const scope = encodeURIComponent(scopeArray.join(" "));
 
@@ -192,6 +192,10 @@ export function cognitoBuildAuthUrl(identityProvider: IdentityProvider) {
     throw Error(`Invalid identity provider: ${identityProvider}.`);
   }
 
+  if (loginHint) {
+    loginHint = encodeURIComponent(loginHint);
+  }
+
   return `${identityUrl}?
 response_type=code&
 scope=${scope}&
@@ -199,7 +203,8 @@ state=${statePassthroughParamEncrypted}&
 access_type=online&
 include_granted_scopes=true&
 redirect_uri=${redirectUrlEncoded}&
-client_id=${clientId}&`;
+client_id=${clientId}&
+${loginHint ? `login_hint=${loginHint}` : ""}`;
 }
 
 export async function cognitoFetchCredentialsFromOAuthCode(
@@ -255,6 +260,11 @@ export async function googleFetchCredentialsFromOAuthCode(
   });
   const userInfo = await userScopedGoogleOAuth2.userinfo.get();
   const email = userInfo.data.email;
+
+  if (!userInfo.data.verified_email) {
+    throw new Error("Email is not verified by Google.");
+  }
+
   const accessToken = tokens.access_token;
   if (email && accessToken) {
     return {
@@ -272,7 +282,7 @@ export async function googleFetchCredentialsFromOAuthCode(
 
 export async function microsoftFetchCredentialsFromOAuthCode(
   code: string
-): Promise<AuthCredentialsAuthenticationResultType> {
+): Promise<AuthCredentials> {
   const url = `https://login.microsoftonline.com/common/oauth2/v2.0/token`;
   const data = new URLSearchParams({
     grant_type: "authorization_code",
@@ -280,8 +290,6 @@ export async function microsoftFetchCredentialsFromOAuthCode(
     client_secret: MICROSOFT_CLIENT_SECRET,
     code: code,
     redirect_uri: redirectUrl,
-    // client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-    // client_assertion: microsoftAssertionToken,
   });
 
   const config = {
@@ -292,11 +300,33 @@ export async function microsoftFetchCredentialsFromOAuthCode(
 
   const response = await axios.post(url, data, config);
 
+  const idObject = decodeIdToken(response.data.id_token);
+  const email = idObject.email;
+
   return {
-    AccessToken: response.data.access_token,
-    ExpiresIn: response.data.expires_in,
-    IdToken: response.data.id_token,
-    RefreshToken: response.data.refresh_token,
-    TokenType: response.data.token_type,
+    email,
+    tokens: {
+      AccessToken: response.data.access_token,
+      ExpiresIn: response.data.expires_in,
+      IdToken: response.data.id_token,
+      RefreshToken: response.data.refresh_token,
+      TokenType: response.data.token_type,
+    },
   };
+}
+
+function decodeIdToken(token: string) {
+  var base64Url = token.split(".")[1];
+  var base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+  var jsonPayload = decodeURIComponent(
+    Buffer.from(base64, "base64")
+      .toString()
+      .split("")
+      .map(function (c) {
+        return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+      })
+      .join("")
+  );
+
+  return JSON.parse(jsonPayload);
 }
