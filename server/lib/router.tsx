@@ -20,6 +20,10 @@ const router = async (app: FastifyInstance) => {
     return <ListingEdit />;
   });
 
+  app.get("/dashboard", async () => {
+    return <ListingEdit />;
+  });
+
   app.setNotFoundHandler(() => {
     return <NotFoundPage title="Page not found" />;
   });

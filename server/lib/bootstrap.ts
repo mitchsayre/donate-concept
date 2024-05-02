@@ -76,33 +76,31 @@ app
   .register(fastifyCookie)
   .register(fastifySession, { secret: "a secret with minimum length of 32 characters" })
   .addHook("preHandler", async (request, reply) => {
-    request.session.loaders = createLoaders();
-
-    let accessToken = "";
-    let me: User | null = null;
-    const decodedAccessTokenResult = await cognitoDecodeAccessToken(accessToken);
-    if (decodedAccessTokenResult instanceof JwtExpiredError) {
-      if (decodedAccessTokenResult.rawJwt?.payload.sub) {
-        me = await request.session.loaders.userFromCognitoSub.load(
-          decodedAccessTokenResult.rawJwt.payload.sub
-        );
-        if (me) {
-          if (!me.refreshTokenEncrypted) {
-            throw new Error(
-              "TODO: handle if the current user does not have a refresh token in the database."
-            );
-          }
-          const refreshToken = decrypt(me.refreshTokenEncrypted, DB_ENCRYPTION_KEY);
-          accessToken = await cognitoRefreshAccessToken(refreshToken);
-        }
-      }
-    } else {
-      me = await request.session.loaders.userFromCognitoSub.load(decodedAccessTokenResult.sub);
-    }
-
-    if (me) {
-      request.session.me = me;
-    }
+    // request.session.loaders = createLoaders();
+    // let accessToken = "";
+    // let me: User | null = null;
+    // const decodedAccessTokenResult = await cognitoDecodeAccessToken(accessToken);
+    // if (decodedAccessTokenResult instanceof JwtExpiredError) {
+    //   if (decodedAccessTokenResult.rawJwt?.payload.sub) {
+    //     me = await request.session.loaders.userFromCognitoSub.load(
+    //       decodedAccessTokenResult.rawJwt.payload.sub
+    //     );
+    //     if (me) {
+    //       if (!me.refreshTokenEncrypted) {
+    //         throw new Error(
+    //           "TODO: handle if the current user does not have a refresh token in the database."
+    //         );
+    //       }
+    //       const refreshToken = decrypt(me.refreshTokenEncrypted, DB_ENCRYPTION_KEY);
+    //       accessToken = await cognitoRefreshAccessToken(refreshToken);
+    //     }
+    //   }
+    // } else {
+    //   me = await request.session.loaders.userFromCognitoSub.load(decodedAccessTokenResult.sub);
+    // }
+    // if (me) {
+    //   request.session.me = me;
+    // }
   })
 
   .decorate("verifyAdmin", verifyAdmin)

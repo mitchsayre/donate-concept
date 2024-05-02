@@ -237,14 +237,12 @@ export async function cognitoFetchCredentialsFromOAuthCode(
   };
 }
 
-type AuthCredentials = {
+export type AuthCredentials = {
   email: string;
   tokens: AuthCredentialsAuthenticationResultType;
 };
 
-export async function googleFetchCredentialsFromOAuthCode(
-  code: string
-): Promise<AuthCredentials | undefined> {
+export async function googleFetchCredentialsFromOAuthCode(code: string): Promise<AuthCredentials> {
   const userScopedGoogleOAuth2Client = new google.auth.OAuth2(
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
@@ -277,6 +275,8 @@ export async function googleFetchCredentialsFromOAuthCode(
         TokenType: tokens.token_type ?? undefined,
       },
     };
+  } else {
+    throw new Error("Failed to fetch email and access token from Google.");
   }
 }
 
@@ -303,16 +303,20 @@ export async function microsoftFetchCredentialsFromOAuthCode(
   const idObject = decodeIdToken(response.data.id_token);
   const email = idObject.email;
 
-  return {
-    email,
-    tokens: {
-      AccessToken: response.data.access_token,
-      ExpiresIn: response.data.expires_in,
-      IdToken: response.data.id_token,
-      RefreshToken: response.data.refresh_token,
-      TokenType: response.data.token_type,
-    },
-  };
+  if (email && response.data.access_token) {
+    return {
+      email,
+      tokens: {
+        AccessToken: response.data.access_token,
+        ExpiresIn: response.data.expires_in,
+        IdToken: response.data.id_token,
+        RefreshToken: response.data.refresh_token,
+        TokenType: response.data.token_type,
+      },
+    };
+  } else {
+    throw new Error("Failed to fetch email and access token from Microsoft.");
+  }
 }
 
 function decodeIdToken(token: string) {
