@@ -30,21 +30,31 @@ addEventListener("htmx:load", (_e) => {
     });
   });
 
-  const passwordInput = document.querySelector("[data-validate-password-input]");
-  if (passwordInput) {
-    passwordInput.addEventListener("input", function (event: any) {
-      const validatePasswordIcon = document.querySelector("[data-validate-password-icon]");
-      const validatePasswordMessage = document.querySelector("[data-validate-password-message]");
+  const passwordInput: HTMLInputElement | null = document.querySelector(
+    "[data-validate-password-input]"
+  );
 
-      if (event.target.value.length >= 12) {
-        validatePasswordMessage?.classList.remove("validate-password-text");
-        validatePasswordMessage?.classList.add("validate-password-text-success");
-        validatePasswordIcon?.classList.remove("hidden");
-      } else {
-        validatePasswordMessage?.classList.remove("validate-password-text-success");
-        validatePasswordMessage?.classList.add("validate-password-text");
-        validatePasswordIcon?.classList.add("hidden");
-      }
+  function updatePasswordValidation() {
+    const validatePasswordIcon = document.querySelector("[data-validate-password-icon]");
+    const validatePasswordMessage = document.querySelector("[data-validate-password-message]");
+    const passwordLength = passwordInput!.value.length;
+
+    if (passwordLength >= 12) {
+      validatePasswordMessage?.classList.remove("validate-password-text");
+      validatePasswordMessage?.classList.add("validate-password-text-success");
+      validatePasswordIcon?.classList.remove("hidden");
+    } else {
+      validatePasswordMessage?.classList.remove("validate-password-text-success");
+      validatePasswordMessage?.classList.add("validate-password-text");
+      validatePasswordIcon?.classList.add("hidden");
+    }
+  }
+
+  if (passwordInput) {
+    updatePasswordValidation();
+
+    passwordInput.addEventListener("input", function () {
+      updatePasswordValidation();
     });
   }
 
