@@ -14,6 +14,7 @@ export const SignupRouter = async (app: FastifyInstance) => {
 
   app.post("/signup", async (req, reply) => {
     const body = req.body as SignupRequest;
+    body.email = "example@example.com";
     const result = SignupSchema.safeParse(body);
 
     if (!result.success) {

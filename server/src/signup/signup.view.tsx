@@ -29,8 +29,8 @@ export const Signup = ({ body, errors }: SignupProps) => {
         </div>
 
         <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-          <form novalidate={true} class="space-y-2" action="/signup" method="post" hx-boost="true">
-            <div>
+          <form novalidate={true} class="" action="/signup" method="post" hx-boost="true">
+            <div class="mb-3">
               <label for="email" class="input-label">
                 Email address
               </label>
@@ -47,7 +47,7 @@ export const Signup = ({ body, errors }: SignupProps) => {
               </div>
             </div>
 
-            <div>
+            <div class="mb-3">
               <div class="flex items-center justify-between">
                 <label for="password" class="input-label">
                   <div class="flex flex-row items-center">
@@ -91,7 +91,7 @@ export const Signup = ({ body, errors }: SignupProps) => {
               </div>
             </div>
 
-            <div>
+            <div class="mb-3">
               <div class="flex items-center justify-between">
                 <label for="passwordConfirm" class="input-label">
                   Confirm password
@@ -111,7 +111,7 @@ export const Signup = ({ body, errors }: SignupProps) => {
               </div>
             </div>
 
-            <div>
+            <div class="mt-5">
               <button type="submit" class="button-primary w-full">
                 Sign up
               </button>
