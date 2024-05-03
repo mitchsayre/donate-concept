@@ -29,4 +29,33 @@ addEventListener("htmx:load", (_e) => {
       }
     });
   });
+
+  const passwordInput = document.querySelector("[data-validate-password-input]");
+  if (passwordInput) {
+    passwordInput.addEventListener("input", function (event: any) {
+      const validatePasswordIcon = document.querySelector("[data-validate-password-icon]");
+      const validatePasswordMessage = document.querySelector("[data-validate-password-message]");
+
+      if (event.target.value.length >= 12) {
+        validatePasswordMessage?.classList.remove("validate-password-text");
+        validatePasswordMessage?.classList.add("validate-password-text-success");
+        validatePasswordIcon?.classList.remove("hidden");
+      } else {
+        validatePasswordMessage?.classList.remove("validate-password-text-success");
+        validatePasswordMessage?.classList.add("validate-password-text");
+        validatePasswordIcon?.classList.add("hidden");
+      }
+    });
+  }
+
+  document.querySelectorAll("[data-input]").forEach((el) => {
+    el.addEventListener("focus", () => {
+      el.classList.remove("input-error");
+      const sibling = el.nextElementSibling;
+      if (sibling) {
+        const errorMessage = sibling.querySelector("[data-input-error-message]");
+        errorMessage?.remove();
+      }
+    });
+  });
 });
