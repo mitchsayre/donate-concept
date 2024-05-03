@@ -13,17 +13,23 @@ export const Signup = ({ body, errors }: SignupProps) => {
   const googleAuthUrl = userBuildAuthUrl("Google");
   const microsoftAuthUrl = userBuildAuthUrl("Microsoft");
 
+  const organizationName = "[Organization Name]";
+  const email = "example@example.com";
+
   return (
     <Layout title="Sign up">
       <div class="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
         <div class="sm:mx-auto sm:w-full sm:max-w-sm">
           <h2 class="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
-            Sign in to your account
+            Welcome to {organizationName}.
           </h2>
+          <h4 class="mt-2 text-center text-xl leading-9 tracking-tight text-gray-700">
+            Please create a password.
+          </h4>
         </div>
 
         <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-          <form novalidate={true} class="space-y-4" action="/login" method="post" hx-boost="true">
+          <form novalidate={true} class="space-y-2" action="/signup" method="post" hx-boost="true">
             <div>
               <label for="email" class="input-label">
                 Email address
@@ -31,26 +37,21 @@ export const Signup = ({ body, errors }: SignupProps) => {
               <div class="mt-2">
                 <input
                   data-input
-                  value={body?.email}
+                  disabled
+                  value={email}
                   id="email"
                   name="email"
                   autocomplete="email"
-                  class={`input-text ${errors?.fieldErrors.email ? "input-error" : ""}`}
+                  class="input-text bg-gray-100 text-gray-600"
                 />
-                <InputError errors={errors?.fieldErrors.email} />
               </div>
             </div>
 
             <div>
               <div class="flex items-center justify-between">
                 <label for="password" class="input-label">
-                  Password
+                  New password
                 </label>
-                <div class="text-sm">
-                  <a href="#" class="font-semibold text-PRIMARY hover:text-PRIMARY_HOVER">
-                    Forgot password?
-                  </a>
-                </div>
               </div>
               <div class="mt-2">
                 <input
@@ -67,8 +68,28 @@ export const Signup = ({ body, errors }: SignupProps) => {
             </div>
 
             <div>
+              <div class="flex items-center justify-between">
+                <label for="passwordConfirm" class="input-label">
+                  Confirm password
+                </label>
+              </div>
+              <div class="mt-2">
+                <input
+                  data-input
+                  value={body?.passwordConfirm}
+                  id="passwordConfirm"
+                  name="passwordConfirm"
+                  type="password"
+                  autocomplete="current-password"
+                  class={`input-text ${errors?.fieldErrors.passwordConfirm ? "input-error" : ""}`}
+                />
+                <InputError errors={errors?.fieldErrors.passwordConfirm} />
+              </div>
+            </div>
+
+            <div>
               <button type="submit" class="button-primary w-full">
-                Sign in
+                Sign up
               </button>
             </div>
           </form>

@@ -16,14 +16,14 @@ export const SignupOptions = () => {
           <h2 class="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
             Welcome to {organizationName}.
           </h2>
-          <h4 class="mt-3 text-center text-xl leading-9 tracking-tight text-gray-700">
+          <h4 class="mt-2 text-center text-xl leading-9 tracking-tight text-gray-700">
             Please choose your sign up method.
           </h4>
         </div>
 
-        <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+        <div class="mt-7 sm:mx-auto sm:w-full sm:max-w-sm">
           <div class="flex flex-col space-y-3">
-            <a href={googleAuthUrl} class="flex flex-grow">
+            <a href="/signup" class="flex flex-grow">
               <button class="justify-center flex flex-grow bg-white text-gray-700 font-semibold py-2 px-3 border border-gray-300 rounded shadow">
                 <div class="flex-1">
                   <svg
