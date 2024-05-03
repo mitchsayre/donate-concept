@@ -14,16 +14,15 @@ import { JwtExpiredError } from "aws-jwt-verify/error";
 import { google } from "googleapis";
 import axios from "axios";
 import { encrypt } from "./secrets";
-// import { microsoftAssertionToken } from "./cert";
 
-const AWS_REGION = process.env.AWS_REGION!;
-const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID!;
-const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY!;
+// const AWS_REGION = process.env.AWS_REGION!;
+// const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID!;
+// const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY!;
 
-const COGNITO_USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
-const COGNITO_CLIENT_ID = process.env.COGNITO_CLIENT_ID!;
-const COGNITO_CLIENT_SECRET = process.env.COGNITO_CLIENT_SECRET!;
-const COGNITO_HOSTED_URL = process.env.COGNITO_HOSTED_URL!;
+// const COGNITO_USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
+// const COGNITO_CLIENT_ID = process.env.COGNITO_CLIENT_ID!;
+// const COGNITO_CLIENT_SECRET = process.env.COGNITO_CLIENT_SECRET!;
+// const COGNITO_HOSTED_URL = process.env.COGNITO_HOSTED_URL!;
 
 const PORT = process.env.PORT!;
 const STAGE = process.env.STAGE!;
@@ -39,20 +38,20 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
 const MICROSOFT_CLIENT_ID = process.env.MICROSOFT_CLIENT_ID!;
 const MICROSOFT_CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET!;
 
-const client = new CognitoIdentityProvider({
-  region: AWS_REGION,
-  credentials: {
-    accessKeyId: AWS_ACCESS_KEY_ID,
-    secretAccessKey: AWS_SECRET_ACCESS_KEY,
-  },
-});
+// const client = new CognitoIdentityProvider({
+//   region: AWS_REGION,
+//   credentials: {
+//     accessKeyId: AWS_ACCESS_KEY_ID,
+//     secretAccessKey: AWS_SECRET_ACCESS_KEY,
+//   },
+// });
 
-const verifier = CognitoJwtVerifier.create({
-  userPoolId: COGNITO_USER_POOL_ID,
-  tokenUse: "access",
-  clientId: COGNITO_CLIENT_ID,
-  includeRawJwtInErrors: true,
-});
+// const verifier = CognitoJwtVerifier.create({
+//   userPoolId: COGNITO_USER_POOL_ID,
+//   tokenUse: "access",
+//   clientId: COGNITO_CLIENT_ID,
+//   includeRawJwtInErrors: true,
+// });
 
 let redirectUrlDomain: string;
 if (STAGE === "production") {
@@ -64,94 +63,84 @@ if (STAGE === "production") {
 }
 let redirectUrl = `${redirectUrlDomain}/${OAUTH_RESPONSE_ROUTE}`;
 
-export async function cognitoResetPassword(userSub: string, sessionToken: string) {
-  const input = {
-    ClientId: COGNITO_CLIENT_ID,
-    UserPoolId: COGNITO_USER_POOL_ID,
-    Session: sessionToken,
-    ChallengeName: ChallengeNameType.NEW_PASSWORD_REQUIRED,
-    ChallengeResponses: {
-      USERNAME: userSub,
-      NEW_PASSWORD: "Test1234!",
-    },
-  };
-  const res = await client.adminRespondToAuthChallenge(input);
-  console.log(res);
-}
+// export async function cognitoResetPassword(userSub: string, sessionToken: string) {
+//   const input = {
+//     ClientId: COGNITO_CLIENT_ID,
+//     UserPoolId: COGNITO_USER_POOL_ID,
+//     Session: sessionToken,
+//     ChallengeName: ChallengeNameType.NEW_PASSWORD_REQUIRED,
+//     ChallengeResponses: {
+//       USERNAME: userSub,
+//       NEW_PASSWORD: "",
+//     },
+//   };
+//   const res = await client.adminRespondToAuthChallenge(input);
+//   console.log(res);
+// }
 
-export async function cognitoLogin(userSub: string, password: string) {
-  const command = new AdminInitiateAuthCommand({
-    UserPoolId: COGNITO_USER_POOL_ID,
-    ClientId: COGNITO_CLIENT_ID,
-    AuthFlow: AuthFlowType.ADMIN_USER_PASSWORD_AUTH,
-    AuthParameters: {
-      USERNAME: userSub,
-      PASSWORD: password,
-    },
-  });
-
-  const response = await client.send(command);
-  const AuthenticationResult = response.AuthenticationResult;
-  if (AuthenticationResult?.AccessToken) {
-    // await cognitoVerifyAccessToken(AuthenticationResult.AccessToken);
-  }
-
-  // if (response.ChallengeName === ChallengeNameType.NEW_PASSWORD_REQUIRED) {
-
+export async function userLogin(userSub: string, password: string) {
+  // const command = new AdminInitiateAuthCommand({
+  //   UserPoolId: COGNITO_USER_POOL_ID,
+  //   ClientId: COGNITO_CLIENT_ID,
+  //   AuthFlow: AuthFlowType.ADMIN_USER_PASSWORD_AUTH,
+  //   AuthParameters: {
+  //     USERNAME: userSub,
+  //     PASSWORD: password,
+  //   },
+  // });
+  // const response = await client.send(command);
+  // const AuthenticationResult = response.AuthenticationResult;
+  // if (AuthenticationResult?.AccessToken) {
+  //   // await cognitoVerifyAccessToken(AuthenticationResult.AccessToken);
   // }
-
-  // if (sessionToken) {
-  //   await verifySoftwareToken(sessionToken);
-  // }
-
-  // console.log(response);
-  return response;
-}
-
-export async function cognitoRefreshAccessToken(refreshToken: string) {
-  const command = new AdminInitiateAuthCommand({
-    UserPoolId: COGNITO_USER_POOL_ID,
-    ClientId: COGNITO_CLIENT_ID,
-    AuthFlow: AuthFlowType.REFRESH_TOKEN_AUTH,
-    AuthParameters: {
-      REFRESH_TOKEN: refreshToken,
-    },
-  });
-
-  const response = await client.send(command);
-  const authenticationResult = response.AuthenticationResult;
-  if (authenticationResult?.AccessToken) {
-    return authenticationResult.AccessToken;
-  } else {
-    throw new Error("Failed to refresh access token.");
-  }
-
-  // if (response.ChallengeName === ChallengeNameType.NEW_PASSWORD_REQUIRED) {
-
-  // }
-
-  // if (sessionToken) {
-  //   await verifySoftwareToken(sessionToken);
-  // }
-
-  // console.log(response);
+  // // if (response.ChallengeName === ChallengeNameType.NEW_PASSWORD_REQUIRED) {
+  // // }
+  // // if (sessionToken) {
+  // //   await verifySoftwareToken(sessionToken);
+  // // }
+  // // console.log(response);
   // return response;
+}
+
+export async function userRefreshAccessToken(refreshToken: string) {
+  // // const command = new AdminInitiateAuthCommand({
+  // //   UserPoolId: COGNITO_USER_POOL_ID,
+  // //   ClientId: COGNITO_CLIENT_ID,
+  // //   AuthFlow: AuthFlowType.REFRESH_TOKEN_AUTH,
+  // //   AuthParameters: {
+  // //     REFRESH_TOKEN: refreshToken,
+  // //   },
+  // // });
+  // const response = await client.send(command);
+  // const authenticationResult = response.AuthenticationResult;
+  // if (authenticationResult?.AccessToken) {
+  //   return authenticationResult.AccessToken;
+  // } else {
+  //   throw new Error("Failed to refresh access token.");
+  // }
+  // // if (response.ChallengeName === ChallengeNameType.NEW_PASSWORD_REQUIRED) {
+  // // }
+  // // if (sessionToken) {
+  // //   await verifySoftwareToken(sessionToken);
+  // // }
+  // // console.log(response);
+  // // return response;
 }
 
 // type CognitoValidateOrRefreshAccessTokenResult = {
 //   user: User;
 //   accessToken: string;
 // };
-export async function cognitoDecodeAccessToken(accessToken: string) {
-  try {
-    const payload = await verifier.verify(accessToken);
-    return payload;
-  } catch (error) {
-    if (error instanceof JwtExpiredError) {
-      return error;
-    }
-    throw new Error("Token is invalid");
-  }
+export async function userDecodeAccessToken(accessToken: string) {
+  // try {
+  //   const payload = await verifier.verify(accessToken);
+  //   return payload;
+  // } catch (error) {
+  //   if (error instanceof JwtExpiredError) {
+  //     return error;
+  //   }
+  //   throw new Error("Token is invalid");
+  // }
 }
 
 export type IdentityProvider = "Google" | "Microsoft";
@@ -160,7 +149,7 @@ export type StatePassthroughType = {
   unixTime: number;
   identityProvider: IdentityProvider;
 };
-export function cognitoBuildAuthUrl(identityProvider: IdentityProvider, loginHint?: string) {
+export function userBuildAuthUrl(identityProvider: IdentityProvider, loginHint?: string) {
   // TODO: Use login_hint query param to pre-fill email address for sign up: https://github.com/aws-amplify/amplify-js/issues/8951
   // TODO: Fix state to prevent xsrf attacks: https://developers.google.com/identity/openid-connect/openid-connect#createxsrftoken
   const stateForCsrfProtection: StatePassthroughType = {
@@ -175,9 +164,6 @@ export function cognitoBuildAuthUrl(identityProvider: IdentityProvider, loginHin
   let redirectUrlEncoded = encodeURIComponent(redirectUrl);
 
   const scopeArray = ["openid", "email"];
-  // if (identityProvider === "Microsoft") {
-  //   scopeArray.push("User.Read");
-  // }
   const scope = encodeURIComponent(scopeArray.join(" "));
 
   let identityUrl: string;
@@ -207,35 +193,35 @@ client_id=${clientId}&
 ${loginHint ? `login_hint=${loginHint}` : ""}`;
 }
 
-export async function cognitoFetchCredentialsFromOAuthCode(
-  code: string
-): Promise<AuthCredentialsAuthenticationResultType> {
-  const url = `${COGNITO_HOSTED_URL}/oauth2/token`;
-  const data = new URLSearchParams({
-    grant_type: "authorization_code",
-    client_id: COGNITO_CLIENT_ID,
-    code: code,
-    redirect_uri: redirectUrl,
-  });
+// export async function cognitoFetchCredentialsFromOAuthCode(
+//   code: string
+// ): Promise<AuthCredentialsAuthenticationResultType> {
+//   const url = `${COGNITO_HOSTED_URL}/oauth2/token`;
+//   const data = new URLSearchParams({
+//     grant_type: "authorization_code",
+//     client_id: COGNITO_CLIENT_ID,
+//     code: code,
+//     redirect_uri: redirectUrl,
+//   });
 
-  const basicAuth = `Basic ${btoa(`${COGNITO_CLIENT_ID}:${COGNITO_CLIENT_SECRET}`)}`;
-  const config = {
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: basicAuth,
-    },
-  };
+//   const basicAuth = `Basic ${btoa(`${COGNITO_CLIENT_ID}:${COGNITO_CLIENT_SECRET}`)}`;
+//   const config = {
+//     headers: {
+//       "Content-Type": "application/x-www-form-urlencoded",
+//       Authorization: basicAuth,
+//     },
+//   };
 
-  const response = await axios.post(url, data, config);
+//   const response = await axios.post(url, data, config);
 
-  return {
-    AccessToken: response.data.access_token,
-    ExpiresIn: response.data.expires_in,
-    IdToken: response.data.id_token,
-    RefreshToken: response.data.refresh_token,
-    TokenType: response.data.token_type,
-  };
-}
+//   return {
+//     AccessToken: response.data.access_token,
+//     ExpiresIn: response.data.expires_in,
+//     IdToken: response.data.id_token,
+//     RefreshToken: response.data.refresh_token,
+//     TokenType: response.data.token_type,
+//   };
+// }
 
 export type AuthCredentials = {
   email: string;

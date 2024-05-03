@@ -2,13 +2,13 @@ import { FastifyInstance } from "fastify";
 import { Login } from "./login.view";
 import { LoginRequest, LoginSchema } from "./login.service";
 import {
-  cognitoLogin,
+  userLogin,
   StatePassthroughType,
   googleFetchCredentialsFromOAuthCode,
   microsoftFetchCredentialsFromOAuthCode,
   AuthCredentials,
-} from "../../auth";
-import { decrypt } from "../../secrets";
+} from "../../lib/auth";
+import { decrypt } from "../../lib/secrets";
 
 const OAUTH_RESPONSE_ROUTE = process.env.OAUTH_RESPONSE_ROUTE!;
 const SESSION_ENCRYPTION_KEY = process.env.SESSION_ENCRYPTION_KEY!;
@@ -64,7 +64,7 @@ export const LoginRouter = async (app: FastifyInstance) => {
 
     const user = await req.session.loaders.userFromEmail.load(body.email);
     if (user) {
-      await cognitoLogin(user.cognitoSub, body.password);
+      await userLogin(user.cognitoSub, body.password);
     }
 
     return reply.redirect("/dashboard");

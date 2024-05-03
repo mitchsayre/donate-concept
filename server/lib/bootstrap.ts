@@ -15,10 +15,10 @@ import { fastifyCookie } from "@fastify/cookie";
 import { User } from "../../prisma/generated/kysely";
 import { createLoaders } from "./loaders";
 import { fastifyAuth, FastifyAuthFunction } from "@fastify/auth";
-import { verifyAdmin, verifyOwner } from "../role";
-import { cognitoDecodeAccessToken, cognitoRefreshAccessToken } from "../auth";
+import { verifyAdmin, verifyOwner } from "./role";
 import { JwtExpiredError } from "aws-jwt-verify/error";
-import { decrypt } from "../secrets";
+import { decrypt } from "./secrets";
+import { SignupRouter } from "../src/signup/signup.router";
 
 const SESSION_ENCRYPTION_KEY = process.env.SESSION_ENCRYPTION_KEY!;
 const DB_ENCRYPTION_KEY = process.env.DB_ENCRYPTION_KEY!;
@@ -108,6 +108,7 @@ app
   .register(fastifyAuth)
 
   .register(router)
-  .register(LoginRouter);
+  .register(LoginRouter)
+  .register(SignupRouter);
 
 export default () => app;

@@ -1,4 +1,4 @@
-import { DB } from "../prisma/generated/kysely.js";
+import { DB } from "../../prisma/generated/kysely.js";
 import pg from "pg";
 import { Kysely, PostgresDialect } from "kysely";
 import { removeNullFieldsThatAreNonNullable } from "./helpers.js";

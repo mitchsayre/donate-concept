@@ -1,5 +1,5 @@
 import DataLoader from "dataloader";
-import { db } from "../database";
+import { db } from "./database";
 import { DB } from "../../prisma/generated/kysely";
 
 function createLoader<T extends keyof DB & string>(tableName: T, columnName: keyof DB[T]) {

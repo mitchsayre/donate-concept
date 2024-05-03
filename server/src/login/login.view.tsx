@@ -1,4 +1,4 @@
-import { cognitoBuildAuthUrl } from "../../auth";
+import { userBuildAuthUrl } from "../../lib/auth";
 import { Layout } from "../../views/Layout";
 import { InputError } from "../components/InputError";
 import { LoginRequest } from "./login.service";
@@ -10,8 +10,8 @@ export interface LoginProps {
 }
 
 export const Login = ({ body, errors }: LoginProps) => {
-  const googleAuthUrl = cognitoBuildAuthUrl("Google");
-  const microsoftAuthUrl = cognitoBuildAuthUrl("Microsoft");
+  const googleAuthUrl = userBuildAuthUrl("Google");
+  const microsoftAuthUrl = userBuildAuthUrl("Microsoft");
 
   return (
     <Layout title="Login">
