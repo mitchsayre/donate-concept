@@ -1,6 +1,7 @@
 import { userBuildAuthUrl } from "../../lib/auth";
 import { Layout } from "../../views/Layout";
 import { InputError } from "../components/InputError";
+import { LegalLinks } from "../components/LegalLinks";
 import { SignupRequest } from "./signup.service";
 import { typeToFlattenedError } from "zod";
 
@@ -18,7 +19,7 @@ export const Signup = ({ body, errors }: SignupProps) => {
 
   return (
     <Layout title="Sign up">
-      <div class="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
+      <div class="flex min-h-screen flex-col justify-center px-6 pt-12 lg:px-8">
         <div class="sm:mx-auto sm:w-full sm:max-w-sm">
           <h2 class="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
             Welcome to {organizationName}.
@@ -42,7 +43,7 @@ export const Signup = ({ body, errors }: SignupProps) => {
                   id="email"
                   name="email"
                   autocomplete="email"
-                  class="input-text bg-gray-100 text-gray-600"
+                  class="cursor-not-allowed input-text bg-gray-100 text-gray-600"
                 />
               </div>
             </div>
@@ -57,7 +58,9 @@ export const Signup = ({ body, errors }: SignupProps) => {
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 16 16"
                       fill="currentColor"
-                      class="hidden fill-SUCCESS w-4 h-4 ms-2"
+                      class={`${
+                        body && body.password && body.password.length >= 12 ? "" : "hidden"
+                      } fill-SUCCESS w-4 h-4 ms-2`}
                     >
                       <path
                         fillRule="evenodd"
@@ -125,8 +128,8 @@ export const Signup = ({ body, errors }: SignupProps) => {
               <div class="flex-grow border-t border-gray-300"></div>
             </div>
 
-            <div class="flex justify-center gap-4 mt-6">
-              <a href={googleAuthUrl} class="flex flex-grow">
+            <div class="flex justify-center mt-6">
+              <a href={googleAuthUrl} class="flex w-1/2 pe-2">
                 <button class="justify-center flex flex-grow items-center bg-white text-gray-700 font-semibold py-2 px-4 border border-gray-300 rounded shadow">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -156,8 +159,8 @@ export const Signup = ({ body, errors }: SignupProps) => {
                   Google
                 </button>
               </a>
-              <a disabled href={microsoftAuthUrl} class="flex flex-grow">
-                <button class="justify-center flex flex-grow bg-white text-gray-700 font-semibold py-2 px-4 border border-gray-300 rounded shadow">
+              <a disabled href={microsoftAuthUrl} class="flex w-1/2 ps-2">
+                <button class="justify-center flex flex-grow items-center bg-white text-gray-700 font-semibold py-2 px-4 border border-gray-300 rounded shadow">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     height="24"
@@ -176,6 +179,9 @@ export const Signup = ({ body, errors }: SignupProps) => {
               </a>
             </div>
           </div>
+        </div>
+        <div class="flex flex-grow items-end mb-3">
+          <LegalLinks />
         </div>
       </div>
     </Layout>
