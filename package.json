@@ -15,6 +15,7 @@
     "build": "npm run dev:build",
     "postinstall": "npm run build",
     "prestart": "NODE_ENV=production npm run build",
+    "seed": "npm run dev:build && node ./dist/server/seed.js",
     "start": "NODE_ENV=production node ./dist/server/index.js"
   },
   "keywords": [],
@@ -22,6 +23,7 @@
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.564.0",
+    "@aws-sdk/client-ses": "^3.569.0",
     "@fastify/auth": "^4.6.1",
     "@fastify/cookie": "^9.3.1",
     "@fastify/session": "^10.7.2",
@@ -32,6 +34,7 @@
     "dotenv": "^16.4.5",
     "googleapis": "^135.0.0",
     "kysely": "^0.26.3",
+    "nodemailer": "^6.9.13",
     "pg": "^8.11.3",
     "prisma-kysely": "^1.7.1",
     "zod-prisma-types": "^3.1.6"
@@ -42,6 +45,7 @@
     "@fastify/static": "^6.12.0",
     "@tailwindcss/forms": "^0.5.7",
     "@types/node": "^20.12.2",
+    "@types/nodemailer": "^6.4.15",
     "@types/pg": "^8.10.9",
     "concurrently": "^8.2.2",
     "fastify": "^4.25.1",
