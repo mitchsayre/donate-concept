@@ -36,12 +36,18 @@ generator zod {
 }
 
 model User {
-  id                    String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email                 String  @unique
-  cognitoSub            String  @unique @db.Uuid
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                 String   @unique
+  // cognitoSub            String   @unique @db.Uuid
+  passwordEncrypted     String
   refreshTokenEncrypted String?
   role                  Role
-  Admin                 Admin?  @relation("UserAdmin")
+  Admin                 Admin?   @relation("UserAdmin")
+  updatedDate           DateTime
+  createdDate           DateTime
+  createdById           String   @db.Uuid
+  updatedById           String   @db.Uuid
+  isDeleted             Boolean
 }
 
 enum Role {

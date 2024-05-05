@@ -30,13 +30,16 @@ export const db = new Kysely<DB>({
 
 export async function create<T extends keyof DB & string>(
   tableName: T,
-  input: DB[T],
-  session: Session
+  session: Session,
+  input: Omit<
+    DB[T],
+    "id" | "createdById" | "updatedById" | "createdDate" | "updatedDate" | "isDeleted"
+  >
 ) {
   const inputAny = input as any;
   inputAny.id = undefined;
-  inputAny.createdAt = new Date();
-  inputAny.updatedAt = new Date();
+  inputAny.createdDate = new Date();
+  inputAny.updatedDate = new Date();
   inputAny.createdById = session.me.id;
   inputAny.updatedById = session.me.id;
   inputAny.isDeleted = false;
@@ -51,6 +54,41 @@ export async function create<T extends keyof DB & string>(
     tableName.slice(1)) as keyof ReturnType<typeof createLoaders>;
 
   const row = await session.loaders[tableNameCamelCase].load(result.id);
+
+  if (!row) {
+    throw Error(`Failed to create new ${tableName}.`);
+  }
+
+  return row;
+}
+
+export async function update<T extends keyof DB & string>(
+  tableName: T,
+  session: Session,
+  input: Omit<DB[T], "createdById" | "updatedById" | "createdDate" | "updatedDate" | "isDeleted">
+) {
+  const inputAny = input as any;
+  inputAny.updatedDate = new Date();
+  inputAny.updatedById = session.me.id;
+
+  const id = inputAny.id;
+  inputAny.id = undefined;
+
+  const result = await db
+    .updateTable(tableName)
+    .set(inputAny)
+    .where("id", "=", id)
+    .executeTakeFirstOrThrow();
+
+  const tableNameCamelCase = (tableName.charAt(0).toLowerCase() +
+    tableName.slice(1)) as keyof ReturnType<typeof createLoaders>;
+
+  const row = await session.loaders[tableNameCamelCase].load(id);
+
+  if (!row) {
+    throw Error(`${tableName} not found with id: ${id}.`);
+  }
+
   return row;
 }
 
