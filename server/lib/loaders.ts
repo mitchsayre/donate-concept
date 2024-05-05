@@ -27,7 +27,6 @@ export function createLoaders() {
     user: createLoader("User", "id"),
 
     // 1 to 1 relation loaders
-    userFromCognitoSub: createLoader("User", "cognitoSub"),
     userFromEmail: createLoader("User", "email"),
   };
 }

@@ -65,7 +65,9 @@ export async function create<T extends keyof DB & string>(
 export async function update<T extends keyof DB & string>(
   tableName: T,
   session: Session,
-  input: Omit<DB[T], "createdById" | "updatedById" | "createdDate" | "updatedDate" | "isDeleted">
+  input: Partial<
+    Omit<DB[T], "createdById" | "updatedById" | "createdDate" | "updatedDate" | "isDeleted">
+  >
 ) {
   const inputAny = input as any;
   inputAny.updatedDate = new Date();
