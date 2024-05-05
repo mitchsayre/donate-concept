@@ -2,6 +2,8 @@ import { DB } from "../../prisma/generated/kysely.js";
 import pg from "pg";
 import { Kysely, PostgresDialect } from "kysely";
 import { removeNullFieldsThatAreNonNullable } from "./helpers.js";
+import { createLoaders } from "./loaders.js";
+import { Session } from "fastify";
 
 export const PAGE_LIMIT = 100;
 
@@ -25,6 +27,32 @@ const dialect = new PostgresDialect({
 export const db = new Kysely<DB>({
   dialect,
 });
+
+export async function create<T extends keyof DB & string>(
+  tableName: T,
+  input: DB[T],
+  session: Session
+) {
+  const inputAny = input as any;
+  inputAny.id = undefined;
+  inputAny.createdAt = new Date();
+  inputAny.updatedAt = new Date();
+  inputAny.createdById = session.me.id;
+  inputAny.updatedById = session.me.id;
+  inputAny.isDeleted = false;
+
+  const result = await db
+    .insertInto(tableName)
+    .values(inputAny)
+    .returning(["id"])
+    .executeTakeFirstOrThrow();
+
+  const tableNameCamelCase = (tableName.charAt(0).toLowerCase() +
+    tableName.slice(1)) as keyof ReturnType<typeof createLoaders>;
+
+  const row = await session.loaders[tableNameCamelCase].load(result.id);
+  return row;
+}
 
 // export async function get<T extends keyof DB & string>(table: T, id: string) {
 //   let ans: keyof DB;
