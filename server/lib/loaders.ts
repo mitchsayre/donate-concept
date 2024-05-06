@@ -1,9 +1,24 @@
 import DataLoader from "dataloader";
 import { db } from "./database";
 import { DB } from "../../prisma/generated/kysely";
+import { Prisma } from "@prisma/client";
+import PrismaRuntime from "@prisma/client/runtime/library";
 
-function createLoader<T extends keyof DB & string>(tableName: T, columnName: keyof DB[T]) {
-  return new DataLoader<string, DB[T] | null>(
+// Enables getting a Prisma type from a string. Ex: PrismaModel<"User">
+// https://github.com/prisma/prisma/issues/6980#issuecomment-2049264510
+type ModelName = Prisma.ModelName;
+// type PrismaModelName = ModelName;
+type PrismaModelType<N extends ModelName = ModelName> = Prisma.TypeMap["model"][N];
+type PrismaModelPayload<N extends ModelName = ModelName> = PrismaModelType<N>["payload"];
+type PrismaModel<N extends ModelName = ModelName> = PrismaRuntime.Types.Result.DefaultSelection<
+  PrismaModelPayload<N>
+>;
+
+function createLoader<T1 extends keyof DB & string, T2 extends PrismaModel<T1>>(
+  tableName: T1,
+  columnName: keyof DB[T1]
+) {
+  return new DataLoader<string, T2 | null>(
     (keys) =>
       new Promise(async (resolve) => {
         try {
@@ -28,5 +43,6 @@ export function createLoaders() {
 
     // 1 to 1 relation loaders
     userFromEmail: createLoader("User", "email"),
+    refreshTokenFromAccessToken: createLoader("RefreshToken", "accessTokenId"),
   };
 }
