@@ -1,8 +1,8 @@
-import { userBuildAuthUrl } from "../../lib/auth";
-import { Layout } from "../../views/Layout";
-import { InputError } from "../components/InputError";
+import { userBuildAuthUrl } from "../../../lib/auth";
+import { Layout } from "../../../views/Layout";
+import { InputError } from "../../components/InputError";
 import { typeToFlattenedError } from "zod";
-import { LegalLinks } from "../components/LegalLinks";
+import { LegalLinks } from "../../components/LegalLinks";
 
 export const SignupOptions = () => {
   const googleAuthUrl = userBuildAuthUrl("Google");

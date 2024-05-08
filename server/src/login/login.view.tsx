@@ -1,7 +1,7 @@
 import { userBuildAuthUrl } from "../../lib/auth";
 import { Layout } from "../../views/Layout";
 import { InputError } from "../components/InputError";
-import { LoginRequest } from "./login.service";
+import { LoginRequest } from "./login.util";
 import { typeToFlattenedError } from "zod";
 import { LegalLinks } from "../components/LegalLinks";
 

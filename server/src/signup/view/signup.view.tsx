@@ -1,16 +1,17 @@
-import { userBuildAuthUrl } from "../../lib/auth";
-import { Layout } from "../../views/Layout";
-import { InputError } from "../components/InputError";
-import { LegalLinks } from "../components/LegalLinks";
-import { SignupRequest } from "./signup.service";
+import { userBuildAuthUrl } from "../../../lib/auth";
+import { Layout } from "../../../views/Layout";
+import { InputError } from "../../components/InputError";
+import { LegalLinks } from "../../components/LegalLinks";
+import { SignupRequest } from "../signup.util";
 import { typeToFlattenedError } from "zod";
 
 export interface SignupProps {
   body?: SignupRequest;
   errors?: typeToFlattenedError<SignupRequest, string>;
+  pageError?: string;
 }
 
-export const Signup = ({ body, errors }: SignupProps) => {
+export const Signup = ({ body, errors, pageError }: SignupProps) => {
   const googleAuthUrl = userBuildAuthUrl("Google");
   const microsoftAuthUrl = userBuildAuthUrl("Microsoft");
 

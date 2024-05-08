@@ -1,4 +1,8 @@
+import { Session } from "fastify";
 import { z } from "zod";
+import { create } from "../../lib/database";
+import { User } from "@prisma/client";
+import { randomUUID } from "crypto";
 
 export const SignupSchema = z
   .object({
@@ -15,3 +19,19 @@ export const SignupSchema = z
   });
 
 export type SignupRequest = z.infer<typeof SignupSchema>;
+
+export type SignupToken = {
+  sub: string; // User's id
+  exp: number; // Expiration unix timestamp
+  mode: "Signup";
+};
+
+const SIGNUP_REFRESH_TOKEN_VALIDITY_PERIOD = parseInt(
+  process.env.SIGNUP_REFRESH_TOKEN_VALIDITY_PERIOD!
+);
+
+export const createSignupTokenPair = (user: User): SignupToken => {
+  const exp = Date.now() + SIGNUP_REFRESH_TOKEN_VALIDITY_PERIOD;
+
+  return { sub: user.id, mode: "Signup", exp };
+};

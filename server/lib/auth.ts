@@ -9,8 +9,8 @@ import {
   RespondToAuthChallengeCommandInput,
   VerifySoftwareTokenCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
-import { CognitoJwtVerifier } from "aws-jwt-verify";
-import { JwtExpiredError } from "aws-jwt-verify/error";
+// import { CognitoJwtVerifier } from "aws-jwt-verify";
+// import { JwtExpiredError } from "aws-jwt-verify/error";
 import { google } from "googleapis";
 import axios from "axios";
 import { encrypt } from "./secrets";
@@ -26,8 +26,7 @@ import { encrypt } from "./secrets";
 
 const PORT = process.env.PORT!;
 const STAGE = process.env.STAGE!;
-const URL_PROD = process.env.URL_PROD!;
-const URL_DEV = process.env.URL_DEV!;
+const WEBSITE_DOMAIN = process.env.WEBSITE_DOMAIN!;
 const OAUTH_RESPONSE_ROUTE = process.env.OAUTH_RESPONSE_ROUTE!;
 const SESSION_ENCRYPTION_KEY = process.env.SESSION_ENCRYPTION_KEY!;
 
@@ -53,15 +52,7 @@ const MICROSOFT_CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET!;
 //   includeRawJwtInErrors: true,
 // });
 
-let redirectUrlDomain: string;
-if (STAGE === "production") {
-  redirectUrlDomain = `https://${URL_PROD}`;
-} else if (STAGE === "development") {
-  redirectUrlDomain = `https://${URL_DEV}`;
-} else {
-  redirectUrlDomain = `http://localhost:${PORT}`;
-}
-let redirectUrl = `${redirectUrlDomain}/${OAUTH_RESPONSE_ROUTE}`;
+const redirectUrl = `${WEBSITE_DOMAIN}/${OAUTH_RESPONSE_ROUTE}`;
 
 // export async function cognitoResetPassword(userSub: string, sessionToken: string) {
 //   const input = {
@@ -77,6 +68,12 @@ let redirectUrl = `${redirectUrlDomain}/${OAUTH_RESPONSE_ROUTE}`;
 //   const res = await client.adminRespondToAuthChallenge(input);
 //   console.log(res);
 // }
+
+export type SessionToken = {
+  sub: string; // User's id
+  exp: number; // Expiration unix timestamp
+  id: string; // Access token id
+};
 
 export async function userLogin(userSub: string, password: string) {
   // const command = new AdminInitiateAuthCommand({

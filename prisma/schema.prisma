@@ -40,32 +40,81 @@ enum Role {
   Admin
 }
 
-model User {
-  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email                 String   @unique
-  passwordEncrypted     String?
-  refreshTokenEncrypted String?
-  role                  Role
-  Admin                 Admin?   @relation("UserAdmin")
-  createdDate           DateTime
-  updatedDate           DateTime
-  createdById           String   @db.Uuid
-  updatedById           String   @db.Uuid
-  isDeleted             Boolean
+enum AuthMethod {
+  Email
+  Google
+  Microsoft
+  Pending
 }
 
-model Admin {
-  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid /// @zod.custom.omit([model])
-  name     String
-  email    String @unique /// @zod.custom.omit([model]) // how will this work with sso?
-  clientId String @db.Uuid /// @zod.custom.omit([model])
-  userId   String @unique @db.Uuid /// @zod.custom.omit([model])
-  Client   Client @relation(fields: [clientId], references: [id], name: "ClientAdmins")
-  User     User   @relation(fields: [userId], references: [id], name: "UserAdmin")
+// Owner creates a new organization and owner creates a new admin (or just invites an admin via email)
+// sign up other admin owner sends an invite link 
+// admin needs some sort of token in the link to their email
+// When admin invites a new admin this creates a user record in the database with that email
+
+// Need some type of mechanism that revokes the access link sent to the user email after an amount of time
+// They also will not be able to sign up if the current admin revokes the invite link
+// This logic could be driven from the refresh token
+
+// How does the refresh token work if they sign in on a new device
+
+// parse token and give them option to sign up with email password or sign up with Google or Microsoft oauth
+// If OAuth: take the response (make sure microsoft or google is in the state param) and set their auth method to google or microsoft
+// If email and password set their auth method to email and set their passwordEncrypted and passwordSalt in plain text
+// Init their refresh token (or this may have already been initialized when the invite link was generated)
+
+// token {
+//   id: string
+//   userId: string
+//   refreshTokenEncrypted: string
+//   expiresAt: Date
+// }
+
+model User {
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email             String        @unique
+  passwordEncrypted String?
+  passwordSalt      String?
+  // refreshTokenEncrypted String?
+  role              Role
+  authMethod        AuthMethod?
+  organizationId    String?       @db.Uuid /// @zod.custom.omit([model])
+  organization      Organization? @relation(fields: [organizationId], references: [id], name: "OrganizationUsers")
+
+  createdDate DateTime
+  updatedDate DateTime
+  createdById String   @db.Uuid
+  updatedById String   @db.Uuid
+  isDeleted   Boolean
 }
+
+model RefreshToken {
+  id            String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String @db.Uuid
+  expiresAt     Int
+  accessTokenId String @unique @db.Uuid
+
+  createdDate DateTime
+  updatedDate DateTime
+  createdById String   @db.Uuid
+  updatedById String   @db.Uuid
+  isDeleted   Boolean
+}
+
+// model Admin {
+//   id    String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid /// @zod.custom.omit([model])
+//   name  String
+//   email String @unique /// @zod.custom.omit([model]) // how will this work with sso?
+
+//   userId         String        @unique @db.Uuid /// @zod.custom.omit([model])
+//   // user           User          @relation(fields: [userId], references: [id], name: "UserAdmin")
+//   // Organization   Organization? @relation(fields: [organizationId], references: [id])
+//   organizationId String?       @db.Uuid
+//   Organization   Organization? @relation(fields: [organizationId], references: [id])
+// }
 
 // Should this be called Organization
-model Client {
+model Organization {
   id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   contactEmail         String? /// @zod.string.email({ message: 'Invalid email address' })
   contactPhone         String? /// @zod.string.regex(/^[1-9]\d{1,14}$/, {message: 'Invalid phone number'})
@@ -78,8 +127,9 @@ model Client {
   logoUrlSigned        String? /// @zod.custom.omit([model])
   bannerPhotoUrl       String?
   bannerPhotoUrlSigned String? /// @zod.custom.omit([model])
-  admins               Admin[]   @relation("ClientAdmins")
-  listings             Listing[] @relation("ClientListings")
+  // admins               Admin[]   @relation("OrganizationAdmins")
+  listings             Listing[] @relation("OrganizationListings")
+  User                 User[]    @relation("OrganizationUsers")
 }
 
 enum ListingStatus {
@@ -98,13 +148,13 @@ model Listing {
   price          String?
   contactEmails  String[] /// @zod.string.email({ message: 'Invalid email address' })
   status         ListingStatus @default(Draft)
-  clientId       String        @db.Uuid
-  Client         Client        @relation(fields: [clientId], references: [id], name: "ClientListings")
+  organizationId String        @db.Uuid
+  organization   Organization  @relation(fields: [organizationId], references: [id], name: "OrganizationListings")
 }
 
 // !!Admin
 
-// !!Client
+// !!Organization
 
 // !!DonorPage (better name)
 

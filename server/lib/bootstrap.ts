@@ -15,13 +15,18 @@ import { fastifyCookie } from "@fastify/cookie";
 import { createLoaders } from "./loaders";
 import { fastifyAuth, FastifyAuthFunction } from "@fastify/auth";
 import { verifyAdmin, verifyOwner } from "./role";
-import { JwtExpiredError } from "aws-jwt-verify/error";
-import { decrypt } from "./secrets";
+// import { JwtExpiredError } from "aws-jwt-verify/error";
+import { decrypt, encrypt } from "./secrets";
 import { SignupRouter } from "../src/signup/signup.router";
 import { User } from "@prisma/client";
+import { SessionToken } from "./auth";
+import { randomUUID } from "crypto";
+import { update } from "./database";
 
 const SESSION_ENCRYPTION_KEY = process.env.SESSION_ENCRYPTION_KEY!;
 const DB_ENCRYPTION_KEY = process.env.DB_ENCRYPTION_KEY!;
+const WEBSITE_DOMAIN = process.env.WEBSITE_DOMAIN!;
+const ACCESS_TOKEN_VALIDITY_PERIOD = parseInt(process.env.ACCESS_TOKEN_VALIDITY_PERIOD!);
 
 declare module "fastify" {
   interface Session {
@@ -76,7 +81,66 @@ app
   .register(fastifyCookie)
   .register(fastifySession, { secret: "a secret with minimum length of 32 characters" })
   .addHook("preHandler", async (request, reply) => {
-    // request.session.loaders = createLoaders();
+    request.session.loaders = createLoaders();
+
+    if (request.cookies.session) {
+      try {
+        const sessionRaw = request.cookies.session;
+        const sessionString = decrypt(sessionRaw, SESSION_ENCRYPTION_KEY);
+        const session: SessionToken = JSON.parse(sessionString);
+
+        const me = await request.session.loaders.user.load(session.sub);
+        if (!me) {
+          throw Error("Invalid session");
+        }
+
+        if (session.exp < Date.now()) {
+          const refreshToken = await request.session.loaders.refreshTokenFromAccessToken.load(
+            session.id
+          );
+
+          if (!refreshToken) {
+            throw Error("Invalid session");
+          }
+
+          if (refreshToken.expiresAt < Date.now()) {
+            throw Error("Invalid session");
+          }
+
+          const newAccessTokenId = randomUUID();
+          const newSessionToken: SessionToken = {
+            id: newAccessTokenId,
+            sub: me.id,
+            exp: Date.now() + ACCESS_TOKEN_VALIDITY_PERIOD,
+          };
+          const newSessionTokenString = JSON.stringify(newSessionToken);
+          const newSessionTokenEncrypted = encrypt(newSessionTokenString, SESSION_ENCRYPTION_KEY);
+
+          const refreshTokenUpdated = await update("RefreshToken", request.session, {
+            accessTokenId: newAccessTokenId,
+          });
+
+          if (!refreshTokenUpdated) {
+            throw Error("Invalid session");
+          }
+
+          reply.setCookie("session", newSessionTokenEncrypted, {
+            path: "/",
+            domain: WEBSITE_DOMAIN,
+            secure: true,
+            httpOnly: true,
+            sameSite: "strict",
+          });
+        }
+      } catch (error) {
+        reply.clearCookie("session", {
+          path: "/",
+          httpOnly: true,
+        });
+
+        reply.redirect("/login");
+      }
+    }
     // let accessToken = "";
     // let me: User | null = null;
     // const decodedAccessTokenResult = await cognitoDecodeAccessToken(accessToken);
