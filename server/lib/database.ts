@@ -3,8 +3,7 @@ import pg from "pg";
 import { Kysely, PostgresDialect } from "kysely";
 import { removeNullFieldsThatAreNonNullable } from "./helpers.js";
 import { createLoaders } from "./loaders.js";
-import { Session } from "fastify";
-
+import { Session } from "./bootstrap.js";
 export const PAGE_LIMIT = 100;
 
 const POSTGRES_USER = process.env.POSTGRES_USER;

@@ -69,12 +69,6 @@ const redirectUrl = `${WEBSITE_DOMAIN}/${OAUTH_RESPONSE_ROUTE}`;
 //   console.log(res);
 // }
 
-export type SessionToken = {
-  sub: string; // User's id
-  exp: number; // Expiration unix timestamp
-  id: string; // Access token id
-};
-
 export async function userLogin(userSub: string, password: string) {
   // const command = new AdminInitiateAuthCommand({
   //   UserPoolId: COGNITO_USER_POOL_ID,

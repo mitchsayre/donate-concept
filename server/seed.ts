@@ -1,9 +1,9 @@
 import "dotenv/config";
-import { Session } from "fastify";
 import { createLoaders } from "./lib/loaders";
 import { AuthMethod, Role, User } from "@prisma/client";
 import { create, db } from "./lib/database";
 import { sendSignupEmail } from "./lib/email";
+import { Session } from "./lib/bootstrap";
 
 const OWNER_EMAILS = process.env.OWNER_EMAILS!.split(",");
 const BOT_UUID = process.env.BOT_UUID!;
@@ -31,10 +31,10 @@ async function main() {
     .returning(["id"])
     .executeTakeFirstOrThrow();
 
-  const session = {
+  const session: Session = {
     me: botUser,
     loaders: createLoaders(),
-  } as Session;
+  };
 
   OWNER_EMAILS.forEach(async (email) => {
     create("User", session, {

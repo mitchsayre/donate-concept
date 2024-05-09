@@ -10,7 +10,6 @@ import { PinoLoggerOptions } from "fastify/types/logger";
 import { NodeEnv } from "../types";
 import jsxRenderer from "./jsxRenderer";
 import { LoginRouter } from "../src/login/login.router";
-import { fastifySession } from "@fastify/session";
 import { fastifyCookie } from "@fastify/cookie";
 import { createLoaders } from "./loaders";
 import { fastifyAuth, FastifyAuthFunction } from "@fastify/auth";
@@ -26,6 +25,9 @@ const SESSION_ENCRYPTION_KEY = process.env.SESSION_ENCRYPTION_KEY!;
 const DB_ENCRYPTION_KEY = process.env.DB_ENCRYPTION_KEY!;
 const WEBSITE_DOMAIN = process.env.WEBSITE_DOMAIN!;
 const ACCESS_TOKEN_VALIDITY_PERIOD = parseInt(process.env.ACCESS_TOKEN_VALIDITY_PERIOD!);
+const REFRESH_TOKEN_VALIDITY_PERIOD = parseInt(process.env.REFRESH_TOKEN_VALIDITY_PERIOD!);
+const STAGE = process.env.STAGE!;
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN!;
 
 export type SessionToken = {
   sub: string; // User's id
@@ -33,19 +35,27 @@ export type SessionToken = {
   id: string; // Access token id
 };
 
-export type SignupToken = {
-  sub: string; // User's id
-  exp: number; // Expiration unix timestamp
-  mode: "Signup";
+// export type SignupToken = {
+//   sub: string; // User's id
+//   exp: number; // Expiration unix timestamp
+//   mode: "Signup";
+// };
+
+export type Session = {
+  me?: User;
+  loaders: ReturnType<typeof createLoaders>;
 };
 
 declare module "fastify" {
-  interface Session {
-    me: User | null;
-    loaders: ReturnType<typeof createLoaders>;
-    token: SessionToken | null;
-    signupToken: SignupToken | null;
+  interface FastifyRequest {
+    session: Session;
   }
+  // interface Session {
+  //   me: User | null;
+  //   loaders: ReturnType<typeof createLoaders>;
+  //   token: SessionToken | null;
+  //   // signupToken: SignupToken | null;
+  // }
 
   interface FastifyInstance {
     verifyAuthenticated: FastifyAuthFunction;
@@ -94,140 +104,196 @@ app
   })
 
   .register(fastifyCookie, {
-    secret: SESSION_ENCRYPTION_KEY,
+    hook: "preHandler",
+    secret: {
+      sign: (value) => {
+        return encrypt(value, SESSION_ENCRYPTION_KEY);
+      },
+      unsign: (value) => {
+        let valueDecrypted;
+        let valid = false;
+        try {
+          valueDecrypted = decrypt(value, SESSION_ENCRYPTION_KEY);
+          valid = true;
+        } catch (error) {
+          valueDecrypted = null;
+        }
+        return {
+          valid: valid,
+          renew: false,
+          value: valueDecrypted,
+        };
+      },
+    },
+    // secret: {
+    //   sign: (value) => {
+    //     return encrypt(value, SESSION_ENCRYPTION_KEY);
+    //   },
+    //   unsign: (value) => {
+    //     return {
+    //       valid: true,
+    //       renew: false,
+    //       value: decrypt(value, SESSION_ENCRYPTION_KEY),
+    //     };
+    //   },
+    // },
+    // secret: SESSION_ENCRYPTION_KEY,
+    // algorithm: "aes-256-cbc",
+    parseOptions: {
+      domain: COOKIE_DOMAIN,
+      httpOnly: true,
+      sameSite: "strict",
+      secure: STAGE === "local" ? false : true,
+    },
   })
-  .register(fastifySession, { secret: SESSION_ENCRYPTION_KEY })
-  .addHook("onRequest", async (request, reply) => {
-    request.session.loaders = createLoaders();
+  // .register(fastifySession, { secret: SESSION_ENCRYPTION_KEY })
+  // .addHook("onSend", (request, reply, payload, done) => {
+  //   const err = null;
+  //   // const newPayload = payload.replace('some-text', 'some-new-text')
+  //   // done(err, newPayload)
+  // })
+  .addHook("preHandler", async (request, reply) => {
+    // request.temp = "temp";
+    // request.session.loaders = createLoaders();
     console.log("");
 
-    if (request.cookies.signupSession) {
-      try {
-        const sessionRaw = request.cookies.signupSession;
-        const sessionString = decrypt(sessionRaw, SESSION_ENCRYPTION_KEY);
-        const sessionParsed = JSON.parse(sessionString);
+    // if (request.cookies.signupSession) {
+    //   try {
+    //     const sessionRaw = request.cookies.signupSession;
+    //     const sessionString = decrypt(sessionRaw, SESSION_ENCRYPTION_KEY);
+    //     const sessionParsed = JSON.parse(sessionString);
 
-        const session: SignupToken = sessionParsed;
-        const me = await request.session.loaders.user.load(session.sub);
-        if (!me) {
-          throw new Error("Invalid registration session");
-        }
+    //     const session: SignupToken = sessionParsed;
+    //     const me = await request.session.loaders.user.load(session.sub);
+    //     if (!me) {
+    //       throw new Error("Invalid registration session");
+    //     }
 
-        request.session.me = me;
-        if (session.exp < Date.now()) {
-          // reply.redirect("/signup/expired");
-        }
+    //     request.session.me = me;
+    //     if (session.exp < Date.now()) {
+    //       // reply.redirect("/signup/expired");
+    //     }
 
-        // reply.redirect("/signup/options");
-      } catch (error) {
-        // reply.redirect("/dashboard");
-        // throw Error("TODO: handle either a 404 or a redirect");
-      }
-    } else if (request.cookies.session) {
-      try {
-        const sessionRaw = request.cookies.session;
-        const sessionString = decrypt(sessionRaw, SESSION_ENCRYPTION_KEY);
-        const sessionParsed = JSON.parse(sessionString);
+    //     // reply.redirect("/signup/options");
+    //   } catch (error) {
+    //     // reply.redirect("/dashboard");
+    //     // throw Error("TODO: handle either a 404 or a redirect");
+    //   }
+    // } else if (request.cookies.session) {
+    //   try {
+    //     const sessionRaw = request.cookies.session;
+    //     const sessionString = decrypt(sessionRaw, SESSION_ENCRYPTION_KEY);
+    //     const sessionParsed = JSON.parse(sessionString);
 
-        const session: SessionToken = sessionParsed;
+    //     const session: SessionToken = sessionParsed;
 
-        const me = await request.session.loaders.user.load(session.sub);
-        if (!me) {
-          throw Error("Invalid session");
-        }
+    //     const me = await request.session.loaders.user.load(session.sub);
+    //     if (!me) {
+    //       throw Error("Invalid session");
+    //     }
 
-        request.session.me = me;
-        request.session.token = session;
+    //     request.session.me = me;
+    //     request.session.token = session;
 
-        if (session.exp < Date.now()) {
-          const refreshToken = await request.session.loaders.refreshTokenFromAccessToken.load(
-            session.id
-          );
+    //     if (session.exp < Date.now()) {
+    //       const refreshToken = await request.session.loaders.refreshTokenFromAccessToken.load(
+    //         session.id
+    //       );
 
-          if (!refreshToken) {
-            throw Error("Invalid session");
-          }
+    //       if (!refreshToken) {
+    //         throw Error("Invalid session");
+    //       }
 
-          if (refreshToken.expiresAt < Date.now()) {
-            throw Error("Invalid session");
-          }
+    //       if (refreshToken.expiresAt < Date.now()) {
+    //         throw Error("Invalid session");
+    //       }
 
-          const newAccessTokenId = randomUUID();
-          const newSessionToken: SessionToken = {
-            id: newAccessTokenId,
-            sub: me.id,
-            exp: Date.now() + ACCESS_TOKEN_VALIDITY_PERIOD,
-          };
-          const newSessionTokenString = JSON.stringify(newSessionToken);
-          const newSessionTokenEncrypted = encrypt(newSessionTokenString, SESSION_ENCRYPTION_KEY);
-          const refreshTokenUpdated = await update("RefreshToken", request.session, {
-            accessTokenId: newAccessTokenId,
-          });
+    //       const newAccessTokenId = randomUUID();
+    //       const newSessionToken: SessionToken = {
+    //         id: newAccessTokenId,
+    //         sub: me.id,
+    //         exp: Date.now() + ACCESS_TOKEN_VALIDITY_PERIOD,
+    //       };
+    //       const newSessionTokenString = JSON.stringify(newSessionToken);
+    //       const newSessionTokenEncrypted = encrypt(newSessionTokenString, SESSION_ENCRYPTION_KEY);
+    //       const refreshTokenUpdated = await update("RefreshToken", request.session, {
+    //         accessTokenId: newAccessTokenId,
+    //       });
 
-          if (!refreshTokenUpdated) {
-            throw Error("Invalid session");
-          }
+    //       if (!refreshTokenUpdated) {
+    //         throw Error("Invalid session");
+    //       }
 
-          request.session.token = newSessionToken;
+    //       request.session.token = newSessionToken;
 
-          reply.setCookie("session", newSessionTokenEncrypted, {
-            // path: "/",
-            domain: WEBSITE_DOMAIN,
-            secure: true,
-            httpOnly: true,
-            sameSite: "strict",
-          });
-        }
-      } catch (error) {
-        reply.clearCookie("session", {
-          // path: "/",
-          domain: WEBSITE_DOMAIN,
-          httpOnly: true,
-          secure: true,
-          sameSite: "strict",
-        });
+    //       reply.setCookie("session", newSessionTokenEncrypted, {
+    //         // path: "/",
+    //         domain: WEBSITE_DOMAIN,
+    //         secure: true,
+    //         httpOnly: true,
+    //         sameSite: "strict",
+    //       });
+    //     }
+    //   } catch (error) {
+    //     reply.clearCookie("session", {
+    //       // path: "/",
+    //       domain: WEBSITE_DOMAIN,
+    //       httpOnly: true,
+    //       secure: true,
+    //       sameSite: "strict",
+    //     });
 
-        request.session.me = null;
-        request.session.token = null;
+    //     request.session.me = null;
+    //     request.session.token = null;
 
-        // reply.redirect("/login");
-      }
-    } else if (request.routeOptions.url === "/signup") {
-      try {
-        const queryParams = request.query as any;
-        if (!queryParams.token) {
-          return Error("Invalid registration session");
-        }
+    //     // reply.redirect("/login");
+    //   }
+    // } else if (request.routeOptions.url === "/signup") {
+    //   try {
+    //     const queryParams = request.query as any;
+    //     if (!queryParams.token) {
+    //       return Error("Invalid registration session");
+    //     }
 
-        const signupTokenString = decrypt(queryParams.token, SESSION_ENCRYPTION_KEY);
-        const signupToken: SignupToken = JSON.parse(signupTokenString);
+    //     const signupTokenString = decrypt(queryParams.token, SESSION_ENCRYPTION_KEY);
+    //     const signupToken: SignupToken = JSON.parse(signupTokenString);
 
-        const me = await request.session.loaders.user.load(signupToken.sub);
-        if (!me) {
-          throw new Error("Invalid registration session");
-        }
+    //     const me = await request.session.loaders.user.load(signupToken.sub);
+    //     if (!me) {
+    //       throw new Error("Invalid registration session");
+    //     }
 
-        request.session.me = me;
-        if (signupToken.exp < Date.now()) {
-          // reply.redirect("/signup/expired");
-        }
+    //     request.session.me = me;
+    //     if (signupToken.exp < Date.now()) {
+    //       // reply.redirect("/signup/expired");
+    //     }
 
-        const signupTokenEncrypted = encrypt(signupTokenString, SESSION_ENCRYPTION_KEY);
-        reply.setCookie("signupSession", signupTokenEncrypted, {
-          // path: "/",
-          domain: WEBSITE_DOMAIN,
-          secure: true,
-          httpOnly: true,
-          sameSite: "strict",
-        });
+    //     const signupTokenEncrypted = encrypt(signupTokenString, SESSION_ENCRYPTION_KEY);
+    //     reply.setCookie("signupSession", signupTokenEncrypted, {
+    //       // path: "/",
+    //       domain: WEBSITE_DOMAIN,
+    //       secure: true,
+    //       httpOnly: true,
+    //       sameSite: "strict",
+    //     });
 
-        // reply.redirect("/signup/options");
-      } catch (error) {
-        // reply.redirect("/dashboard");
-        // throw Error("TODO: handle either a 404 or a redirect");
-      }
-    }
+    //     // reply.redirect("/signup/options");
+    //   } catch (error) {
+    //     // reply.redirect("/dashboard");
+    //     // throw Error("TODO: handle either a 404 or a redirect");
+    //   }
+    // }
   })
+  .addHook("onResponse", (request, reply, done) => {
+    // Some code
+    done();
+  })
+  // .addHook("onRequest", (request, reply) => {
+  //   reply.setCookie("bar", "bar", {
+  //     path: "/",
+  //     signed: true,
+  //   });
+  // })
 
   .decorate("verifyAuthenticated", verifyAuthenticated)
   .decorate("verifyAdmin", verifyAdmin)

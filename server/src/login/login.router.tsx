@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { Login } from "./login.view";
-import { LoginRequest, LoginSchema } from "./login.service";
+import { LoginRequest, LoginSchema } from "./login.util";
 import {
   userLogin,
   StatePassthroughType,
@@ -12,6 +12,7 @@ import { decrypt } from "../../lib/secrets";
 
 const OAUTH_RESPONSE_ROUTE = process.env.OAUTH_RESPONSE_ROUTE!;
 const SESSION_ENCRYPTION_KEY = process.env.SESSION_ENCRYPTION_KEY!;
+const REFRESH_TOKEN_VALIDITY_PERIOD = parseInt(process.env.REFRESH_TOKEN_VALIDITY_PERIOD!);
 
 type oauthQueryResponse = {
   code: string;
@@ -49,7 +50,19 @@ export const LoginRouter = async (app: FastifyInstance) => {
     return reply.redirect("/dashboard");
   });
 
-  app.get("/login", async () => {
+  app.get("/login", async (request, reply) => {
+    if (!request.cookies.testingcookieplswork) {
+      reply.setCookie("testingcookieplswork", "bar", {
+        path: "/",
+        // maxAge: Math.floor((Date.now() + REFRESH_TOKEN_VALIDITY_PERIOD) / 1000),
+        signed: true,
+        expires: new Date(Date.now() + REFRESH_TOKEN_VALIDITY_PERIOD),
+        // signed: true,
+      });
+    } else {
+      const bCookie = request.unsignCookie(request.cookies.testingcookieplswork);
+      console.log(bCookie);
+    }
     return <Login />;
   });
 
@@ -63,9 +76,9 @@ export const LoginRouter = async (app: FastifyInstance) => {
     }
 
     const user = await req.session.loaders.userFromEmail.load(body.email);
-    if (user) {
-      await userLogin(user.cognitoSub, body.password);
-    }
+    // if (user) {
+    //   await userLogin(user.cognitoSub, body.password);
+    // }
 
     return reply.redirect("/dashboard");
   });

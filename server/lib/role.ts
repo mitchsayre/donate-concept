@@ -49,10 +49,10 @@ export const verifyPending: FastifyAuthFunction = (request, reply, done) => {
     return Error("TODO: Should 404 or redirect to the dashboard?");
   }
 
-  const signupToken = request.session.signupToken;
-  if (!signupToken) {
-    return Error("TODO: Should 404?");
-  }
+  // const signupToken = request.session.signupToken;
+  // if (!signupToken) {
+  //   return Error("TODO: Should 404?");
+  // }
 
   done();
 };
