@@ -36,12 +36,17 @@ export async function create<T extends keyof DB & string>(
     "id" | "createdById" | "updatedById" | "createdDate" | "updatedDate" | "isDeleted"
   >
 ) {
+  const me = session.me;
+  if (!me) {
+    throw Error(`User sesssion not established.`);
+  }
+
   const inputAny = input as any;
   inputAny.id = undefined;
   inputAny.createdDate = new Date();
   inputAny.updatedDate = new Date();
-  inputAny.createdById = session.me.id;
-  inputAny.updatedById = session.me.id;
+  inputAny.createdById = me.id;
+  inputAny.updatedById = me.id;
   inputAny.isDeleted = false;
 
   const result = await db
@@ -69,9 +74,14 @@ export async function update<T extends keyof DB & string>(
     Omit<DB[T], "createdById" | "updatedById" | "createdDate" | "updatedDate" | "isDeleted">
   >
 ) {
+  const me = session.me;
+  if (!me) {
+    throw Error(`User sesssion not established.`);
+  }
+
   const inputAny = input as any;
   inputAny.updatedDate = new Date();
-  inputAny.updatedById = session.me.id;
+  inputAny.updatedById = me.id;
 
   const id = inputAny.id;
   inputAny.id = undefined;

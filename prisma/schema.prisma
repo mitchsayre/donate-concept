@@ -45,6 +45,7 @@ enum AuthMethod {
   Google
   Microsoft
   Pending
+  None
 }
 
 // Owner creates a new organization and owner creates a new admin (or just invites an admin via email)
@@ -77,7 +78,7 @@ model User {
   passwordSalt      String?
   // refreshTokenEncrypted String?
   role              Role
-  authMethod        AuthMethod?
+  authMethod        AuthMethod
   organizationId    String?       @db.Uuid /// @zod.custom.omit([model])
   organization      Organization? @relation(fields: [organizationId], references: [id], name: "OrganizationUsers")
 

@@ -1,17 +1,18 @@
 import "dotenv/config";
 import { Session } from "fastify";
 import { createLoaders } from "./lib/loaders";
-import { Role, User } from "@prisma/client";
+import { AuthMethod, Role, User } from "@prisma/client";
 import { create, db } from "./lib/database";
+import { sendSignupEmail } from "./lib/email";
 
 const OWNER_EMAILS = process.env.OWNER_EMAILS!.split(",");
 const BOT_UUID = process.env.BOT_UUID!;
-const URL_PROD = process.env.URL_PROD!;
+const URL = process.env.URL!;
 
 async function main() {
   const botUser: User = {
     id: BOT_UUID,
-    email: `noreply@${URL_PROD}`,
+    email: `noreply@${URL}`,
     role: Role.Owner,
     updatedDate: new Date(),
     createdDate: new Date(),
@@ -19,7 +20,9 @@ async function main() {
     updatedById: BOT_UUID,
     isDeleted: false,
     passwordEncrypted: null,
-    refreshTokenEncrypted: null,
+    passwordSalt: null,
+    authMethod: AuthMethod.None,
+    organizationId: null,
   };
 
   const result = await db
@@ -38,7 +41,9 @@ async function main() {
       email: email,
       role: Role.Owner,
       passwordEncrypted: null,
-      refreshTokenEncrypted: null,
+      passwordSalt: null,
+      authMethod: AuthMethod.Pending,
+      organizationId: null,
     });
   });
 }

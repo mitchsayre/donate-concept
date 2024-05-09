@@ -14,12 +14,11 @@ import { fastifySession } from "@fastify/session";
 import { fastifyCookie } from "@fastify/cookie";
 import { createLoaders } from "./loaders";
 import { fastifyAuth, FastifyAuthFunction } from "@fastify/auth";
-import { verifyAdmin, verifyOwner } from "./role";
+import { verifyAdmin, verifyAuthenticated, verifyOwner, verifyPending } from "./role";
 // import { JwtExpiredError } from "aws-jwt-verify/error";
 import { decrypt, encrypt } from "./secrets";
 import { SignupRouter } from "../src/signup/signup.router";
 import { User } from "@prisma/client";
-import { SessionToken } from "./auth";
 import { randomUUID } from "crypto";
 import { update } from "./database";
 
@@ -28,15 +27,31 @@ const DB_ENCRYPTION_KEY = process.env.DB_ENCRYPTION_KEY!;
 const WEBSITE_DOMAIN = process.env.WEBSITE_DOMAIN!;
 const ACCESS_TOKEN_VALIDITY_PERIOD = parseInt(process.env.ACCESS_TOKEN_VALIDITY_PERIOD!);
 
+export type SessionToken = {
+  sub: string; // User's id
+  exp: number; // Expiration unix timestamp
+  id: string; // Access token id
+};
+
+export type SignupToken = {
+  sub: string; // User's id
+  exp: number; // Expiration unix timestamp
+  mode: "Signup";
+};
+
 declare module "fastify" {
   interface Session {
-    me: User;
+    me: User | null;
     loaders: ReturnType<typeof createLoaders>;
+    token: SessionToken | null;
+    signupToken: SignupToken | null;
   }
 
   interface FastifyInstance {
+    verifyAuthenticated: FastifyAuthFunction;
     verifyAdmin: FastifyAuthFunction;
     verifyOwner: FastifyAuthFunction;
+    verifyPending: FastifyAuthFunction;
   }
 }
 
@@ -78,21 +93,51 @@ app
     prefix: `/${ASSETS_MOUNT_POINT}`,
   })
 
-  .register(fastifyCookie)
-  .register(fastifySession, { secret: "a secret with minimum length of 32 characters" })
-  .addHook("preHandler", async (request, reply) => {
+  .register(fastifyCookie, {
+    secret: SESSION_ENCRYPTION_KEY,
+  })
+  .register(fastifySession, { secret: SESSION_ENCRYPTION_KEY })
+  .addHook("onRequest", async (request, reply) => {
     request.session.loaders = createLoaders();
+    console.log("");
 
-    if (request.cookies.session) {
+    if (request.cookies.signupSession) {
+      try {
+        const sessionRaw = request.cookies.signupSession;
+        const sessionString = decrypt(sessionRaw, SESSION_ENCRYPTION_KEY);
+        const sessionParsed = JSON.parse(sessionString);
+
+        const session: SignupToken = sessionParsed;
+        const me = await request.session.loaders.user.load(session.sub);
+        if (!me) {
+          throw new Error("Invalid registration session");
+        }
+
+        request.session.me = me;
+        if (session.exp < Date.now()) {
+          // reply.redirect("/signup/expired");
+        }
+
+        // reply.redirect("/signup/options");
+      } catch (error) {
+        // reply.redirect("/dashboard");
+        // throw Error("TODO: handle either a 404 or a redirect");
+      }
+    } else if (request.cookies.session) {
       try {
         const sessionRaw = request.cookies.session;
         const sessionString = decrypt(sessionRaw, SESSION_ENCRYPTION_KEY);
-        const session: SessionToken = JSON.parse(sessionString);
+        const sessionParsed = JSON.parse(sessionString);
+
+        const session: SessionToken = sessionParsed;
 
         const me = await request.session.loaders.user.load(session.sub);
         if (!me) {
           throw Error("Invalid session");
         }
+
+        request.session.me = me;
+        request.session.token = session;
 
         if (session.exp < Date.now()) {
           const refreshToken = await request.session.loaders.refreshTokenFromAccessToken.load(
@@ -115,7 +160,6 @@ app
           };
           const newSessionTokenString = JSON.stringify(newSessionToken);
           const newSessionTokenEncrypted = encrypt(newSessionTokenString, SESSION_ENCRYPTION_KEY);
-
           const refreshTokenUpdated = await update("RefreshToken", request.session, {
             accessTokenId: newAccessTokenId,
           });
@@ -124,8 +168,10 @@ app
             throw Error("Invalid session");
           }
 
+          request.session.token = newSessionToken;
+
           reply.setCookie("session", newSessionTokenEncrypted, {
-            path: "/",
+            // path: "/",
             domain: WEBSITE_DOMAIN,
             secure: true,
             httpOnly: true,
@@ -134,41 +180,59 @@ app
         }
       } catch (error) {
         reply.clearCookie("session", {
-          path: "/",
+          // path: "/",
+          domain: WEBSITE_DOMAIN,
           httpOnly: true,
+          secure: true,
+          sameSite: "strict",
         });
 
-        reply.redirect("/login");
+        request.session.me = null;
+        request.session.token = null;
+
+        // reply.redirect("/login");
+      }
+    } else if (request.routeOptions.url === "/signup") {
+      try {
+        const queryParams = request.query as any;
+        if (!queryParams.token) {
+          return Error("Invalid registration session");
+        }
+
+        const signupTokenString = decrypt(queryParams.token, SESSION_ENCRYPTION_KEY);
+        const signupToken: SignupToken = JSON.parse(signupTokenString);
+
+        const me = await request.session.loaders.user.load(signupToken.sub);
+        if (!me) {
+          throw new Error("Invalid registration session");
+        }
+
+        request.session.me = me;
+        if (signupToken.exp < Date.now()) {
+          // reply.redirect("/signup/expired");
+        }
+
+        const signupTokenEncrypted = encrypt(signupTokenString, SESSION_ENCRYPTION_KEY);
+        reply.setCookie("signupSession", signupTokenEncrypted, {
+          // path: "/",
+          domain: WEBSITE_DOMAIN,
+          secure: true,
+          httpOnly: true,
+          sameSite: "strict",
+        });
+
+        // reply.redirect("/signup/options");
+      } catch (error) {
+        // reply.redirect("/dashboard");
+        // throw Error("TODO: handle either a 404 or a redirect");
       }
     }
-    // let accessToken = "";
-    // let me: User | null = null;
-    // const decodedAccessTokenResult = await cognitoDecodeAccessToken(accessToken);
-    // if (decodedAccessTokenResult instanceof JwtExpiredError) {
-    //   if (decodedAccessTokenResult.rawJwt?.payload.sub) {
-    //     me = await request.session.loaders.userFromCognitoSub.load(
-    //       decodedAccessTokenResult.rawJwt.payload.sub
-    //     );
-    //     if (me) {
-    //       if (!me.refreshTokenEncrypted) {
-    //         throw new Error(
-    //           "TODO: handle if the current user does not have a refresh token in the database."
-    //         );
-    //       }
-    //       const refreshToken = decrypt(me.refreshTokenEncrypted, DB_ENCRYPTION_KEY);
-    //       accessToken = await cognitoRefreshAccessToken(refreshToken);
-    //     }
-    //   }
-    // } else {
-    //   me = await request.session.loaders.userFromCognitoSub.load(decodedAccessTokenResult.sub);
-    // }
-    // if (me) {
-    //   request.session.me = me;
-    // }
   })
 
+  .decorate("verifyAuthenticated", verifyAuthenticated)
   .decorate("verifyAdmin", verifyAdmin)
   .decorate("verifyOwner", verifyOwner)
+  .decorate("verifyPending", verifyPending)
   .register(fastifyAuth)
 
   .register(router)
