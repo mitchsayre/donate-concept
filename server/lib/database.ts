@@ -1,9 +1,9 @@
-import { DB } from "../../prisma/generated/kysely.js";
+import { DB } from "../../prisma/generated/kysely";
 import pg from "pg";
 import { Kysely, PostgresDialect } from "kysely";
-import { removeNullFieldsThatAreNonNullable } from "./helpers.js";
-import { createLoaders } from "./loaders.js";
-import { Session } from "./bootstrap.js";
+import { removeNullFieldsThatAreNonNullable } from "./helpers";
+import { PrismaModel, createLoaders } from "./loaders";
+import { Session } from "./bootstrap";
 export const PAGE_LIMIT = 100;
 
 const POSTGRES_USER = process.env.POSTGRES_USER;
@@ -66,12 +66,12 @@ export async function create<T extends keyof DB & string>(
   return row;
 }
 
-export async function update<T extends keyof DB & string>(
-  tableName: T,
+export async function update<T1 extends keyof DB & string, T2 extends PrismaModel<T1>>(
+  tableName: T1,
   session: Session,
   input: Partial<
-    Omit<DB[T], "createdById" | "updatedById" | "createdDate" | "updatedDate" | "isDeleted">
-  >
+    Omit<T2, "createdById" | "updatedById" | "createdDate" | "updatedDate" | "isDeleted">
+  > & { id: string }
 ) {
   const me = session.me;
   if (!me) {
@@ -94,7 +94,7 @@ export async function update<T extends keyof DB & string>(
   const tableNameCamelCase = (tableName.charAt(0).toLowerCase() +
     tableName.slice(1)) as keyof ReturnType<typeof createLoaders>;
 
-  const row = await session.loaders[tableNameCamelCase].load(id);
+  const row = (await session.loaders[tableNameCamelCase].load(id)) as T2;
 
   if (!row) {
     throw Error(`${tableName} not found with id: ${id}.`);
