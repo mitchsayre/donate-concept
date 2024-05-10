@@ -11,6 +11,17 @@
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "timeout": 10000
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug seed",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "seed"],
+      "restart": true,
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "timeout": 10000
     }
   ]
 }

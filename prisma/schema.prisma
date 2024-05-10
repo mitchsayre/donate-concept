@@ -90,10 +90,10 @@ model User {
 }
 
 model RefreshToken {
-  id            String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId        String @db.Uuid
-  expiresAt     Int
-  accessTokenId String @unique @db.Uuid
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @db.Uuid
+  expiresAt     DateTime
+  accessTokenId String   @unique @db.Uuid
 
   createdDate DateTime
   updatedDate DateTime
