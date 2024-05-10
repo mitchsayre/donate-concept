@@ -27,11 +27,11 @@ export const db = new Kysely<DB>({
   dialect,
 });
 
-export async function create<T extends keyof DB & string>(
-  tableName: T,
+export async function create<T1 extends keyof DB & string, T2 extends PrismaModel<T1>>(
+  tableName: T1,
   session: Session,
   input: Omit<
-    DB[T],
+    T2,
     "id" | "createdById" | "updatedById" | "createdDate" | "updatedDate" | "isDeleted"
   >
 ) {
@@ -57,7 +57,7 @@ export async function create<T extends keyof DB & string>(
   const tableNameCamelCase = (tableName.charAt(0).toLowerCase() +
     tableName.slice(1)) as keyof ReturnType<typeof createLoaders>;
 
-  const row = await session.loaders[tableNameCamelCase].load(result.id);
+  const row = (await session.loaders[tableNameCamelCase].load(result.id)) as T2;
 
   if (!row) {
     throw Error(`Failed to create new ${tableName}.`);

@@ -18,7 +18,7 @@ import { decrypt, encrypt } from "./secrets";
 import { SignupRouter } from "../src/signup/signup.router";
 import { User } from "@prisma/client";
 import { randomUUID } from "crypto";
-import { update } from "./database";
+import { create, update } from "./database";
 
 const SESSION_ENCRYPTION_KEY = process.env.SESSION_ENCRYPTION_KEY!;
 const DB_ENCRYPTION_KEY = process.env.DB_ENCRYPTION_KEY!;
@@ -35,7 +35,7 @@ export type SessionToken = {
 };
 
 export type Session = {
-  me?: User | null;
+  me: User | null;
   loaders: ReturnType<typeof createLoaders>;
 };
 
@@ -45,7 +45,6 @@ declare module "fastify" {
   }
 
   interface FastifyInstance {
-    verifyAuthenticated: FastifyAuthFunction;
     verifyAdmin: FastifyAuthFunction;
     verifyOwner: FastifyAuthFunction;
     verifyPending: FastifyAuthFunction;
@@ -121,7 +120,10 @@ app
   })
 
   .addHook("preHandler", async (request, reply) => {
-    request.session.loaders = createLoaders();
+    request.session = {
+      loaders: createLoaders(),
+      me: null,
+    };
 
     if (request.cookies.session) {
       try {
@@ -144,7 +146,7 @@ app
             throw Error("Invalid session");
           }
 
-          if (refreshToken.expiresAt < Date.now()) {
+          if (refreshToken.expiresAt < new Date()) {
             throw Error("Invalid session");
           }
 
@@ -172,42 +174,6 @@ app
       } catch (error) {
         request.session.me = null;
         reply.clearCookie("session");
-      }
-    }
-
-    if (request.routeOptions.url === "/signup") {
-      try {
-        const queryParams = request.query as any;
-        if (!queryParams.token) {
-          return Error("Invalid registration session");
-        }
-
-        const signupTokenString = decrypt(queryParams.token, SESSION_ENCRYPTION_KEY);
-        const signupToken: SignupToken = JSON.parse(signupTokenString);
-
-        const me = await request.session.loaders.user.load(signupToken.sub);
-        if (!me) {
-          throw new Error("Invalid registration session");
-        }
-
-        request.session.me = me;
-        if (signupToken.exp < Date.now()) {
-          // reply.redirect("/signup/expired");
-        }
-
-        const signupTokenEncrypted = encrypt(signupTokenString, SESSION_ENCRYPTION_KEY);
-        reply.setCookie("signupSession", signupTokenEncrypted, {
-          // path: "/",
-          domain: WEBSITE_DOMAIN,
-          secure: true,
-          httpOnly: true,
-          sameSite: "strict",
-        });
-
-        // reply.redirect("/signup/options");
-      } catch (error) {
-        // reply.redirect("/dashboard");
-        // throw Error("TODO: handle either a 404 or a redirect");
       }
     }
   })
